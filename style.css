@@ -24,13 +24,20 @@ body {
 }
 
 /* Sidebar Navigation */
+/* Sidebar Navigation - UBAH BAGIAN INI */
 nav {
-  width: 240px;
+  width: 260px;
   background-color: var(--bg-sidebar);
   color: white;
-  padding: 20px 0;
+  padding: 40px 0;
   display: flex;
   flex-direction: column;
+  position: fixed; /* Membuat sidebar menempel */
+  top: 0;
+  left: 0;
+  bottom: 0;
+  height: 100vh;
+  z-index: 100;
 }
 
 nav::before {
@@ -79,9 +86,30 @@ nav::after {
 }
 
 /* Main Content Area */
+.sidebar-brand {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.sidebar-brand h2 {
+  font-size: 24px;
+  margin-bottom: 5px;
+}
+
+.sidebar-brand p {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* Main Content - Memberi ruang untuk sidebar */
 .main-content {
-  flex: 1;
+  margin-left: 260px; /* SAMA dengan lebar nav */
   padding: 40px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 25px; /* Jarak antar bagian (Judul, Card, Tabel) */
+  min-height: 100vh;
 }
 
 .header h1 {
@@ -412,38 +440,22 @@ body {
 /* --- CSS LAPORAN KEUANGAN --- */
 
 /* --- Global Styles & Layout --- */
-:root {
-  --primary-brown: #bc987e;
-  --light-bg: #fffaf5;
-  --text-dark: #4a4a4a;
-  --accent-red: #d94343;
-}
-
-body {
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  background-color: var(--light-bg);
-  margin: 0;
-  display: flex;
-}
 
 /* --- STATS CARDS --- */
 .stats-container {
   display: flex;
   gap: 20px;
-  padding: 30px;
-  margin-left: 200px; /* Sesuaikan dengan lebar sidebar kamu */
+  justify-content: flex-start; /* Membuat card rapat ke kiri */
+  padding: 0;
+  margin-left: 0;
 }
 
 .stat-card {
   background: white;
-  min-width: 200px;
-  padding: 20px;
+  width: 240px; /* Ukuran tetap agar tidak terlalu lebar */
+  padding: 25px;
   border-radius: 20px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  cursor: pointer;
-  transition: 0.3s;
-  position: relative;
-  overflow: hidden;
 }
 
 .stat-card.active {
@@ -473,8 +485,8 @@ body {
 
 /* --- REPORT SECTION --- */
 .report-wrapper {
-  margin-left: 230px;
-  padding: 0 30px 30px 30px;
+  margin-left: 0;
+  max-width: 900px; /* Membatasi lebar agar tidak terlalu jauh ke kanan */
 }
 
 .report-header {
@@ -618,6 +630,32 @@ body {
   padding: 4px 10px;
   border-radius: 5px;
   font-weight: 500;
+}
+
+.report-header {
+  background: #fdf5ef;
+  padding: 15px 25px;
+  border-radius: 20px 20px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.id-badge {
+  background-color: #4a90e2;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.col-jumlah {
+  text-align: right;
+  color: var(--accent-red);
+  font-weight: 700;
 }
 
 @keyframes slideDown {
