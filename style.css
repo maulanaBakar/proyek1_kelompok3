@@ -1,0 +1,632 @@
+/* Menggunakan font yang bersih dan modern */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+
+:root {
+  --primary-brown: #bc987e;
+  --bg-sidebar: #bc987e;
+  --bg-main: #fffaf5;
+  --text-dark: #4a4a4a;
+  --white: #ffffff;
+  --accent-red: #d94343;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+}
+
+body {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--bg-main);
+}
+
+/* Sidebar Navigation */
+nav {
+  width: 240px;
+  background-color: var(--bg-sidebar);
+  color: white;
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+nav::before {
+  content: "2 Paksi";
+  display: block;
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 5px;
+}
+
+nav::after {
+  content: "Sistem manajemen toko";
+  display: block;
+  font-size: 12px;
+  text-align: center;
+  margin-bottom: 40px;
+  opacity: 0.8;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 15px 25px;
+  text-decoration: none;
+  color: white;
+  transition: 0.3s;
+  gap: 15px;
+}
+
+.menu-item.active,
+.menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.9);
+  color: var(--text-dark);
+  border-radius: 20px 0 0 20px;
+  margin-left: 10px;
+}
+
+.menu-item .icon img {
+  width: 20px;
+  filter: brightness(0) invert(1);
+}
+
+.menu-item.active .icon img {
+  filter: none;
+}
+
+/* Main Content Area */
+.main-content {
+  flex: 1;
+  padding: 40px;
+}
+
+.header h1 {
+  color: var(--text-dark);
+  margin-bottom: 30px;
+  font-size: 28px;
+}
+
+/* Inventory Controls */
+.inventory-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.search-box {
+  background: white;
+  padding: 8px 15px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.search-box input {
+  border: none;
+  outline: none;
+  margin-left: 10px;
+}
+
+.add-product-btn {
+  background-color: var(--primary-brown);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 12px;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+/* Table Design */
+.table-container {
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  background-color: var(--primary-brown);
+  color: white;
+}
+
+th {
+  padding: 15px;
+  text-align: left;
+  font-weight: 500;
+}
+
+td {
+  padding: 15px;
+  border-bottom: 1px solid #eee;
+  color: var(--text-dark);
+}
+
+.price {
+  color: var(--accent-red);
+  font-weight: bold;
+}
+
+.edit-btn img {
+  width: 20px;
+}
+
+/* Modal Styling */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  justify-content: center;
+  align-items: center;
+}
+
+.modal:target {
+  display: flex;
+}
+
+.modal-content {
+  background: white;
+  width: 500px;
+  border-radius: 25px;
+  overflow: hidden;
+  animation: slideDown 0.3s ease-out;
+}
+
+.modal-header {
+  background-color: var(--primary-brown);
+  color: white;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h2 {
+  font-size: 20px;
+}
+
+.close-btn {
+  color: white;
+  text-decoration: none;
+  font-size: 24px;
+}
+
+form {
+  padding: 25px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  color: #5c7285;
+  font-size: 14px;
+}
+
+input,
+select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  outline-color: var(--primary-brown);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.btn-cancel {
+  background: #f0f4f8;
+  color: #5c7285;
+  padding: 10px 30px;
+  border-radius: 12px;
+  text-decoration: none;
+}
+
+.btn-save {
+  background: var(--primary-brown);
+  color: white;
+  border: none;
+  padding: 10px 30px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+/* --- Tambahan untuk Halaman Transaksi/Kasir --- */
+
+.main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Container untuk area produk dan keranjang */
+body {
+  display: flex;
+}
+
+/* Penyesuaian Grid Produk */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+  background: white;
+  padding: 25px;
+  border-radius: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.card {
+  border: 1px solid #eee;
+  border-radius: 15px;
+  overflow: hidden;
+  transition: 0.3s;
+  cursor: pointer;
+  background: #fff;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.card img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+}
+
+.card-info {
+  padding: 12px;
+}
+
+.card-info h3 {
+  font-size: 14px;
+  color: var(--text-dark);
+  margin-bottom: 5px;
+}
+
+.card-info .price {
+  font-weight: bold;
+  color: var(--text-dark);
+  font-size: 14px;
+}
+
+/* Panel Keranjang Belanja (Aside) */
+.cart-panel {
+  width: 350px;
+  background-color: var(--bg-sidebar); /* Cokelat sesuai sidebar */
+  margin: 20px;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  color: white;
+}
+
+.cart-title {
+  padding: 20px;
+  font-weight: bold;
+  text-align: center;
+  font-size: 18px;
+}
+
+.cart-items {
+  flex: 1;
+  background: white;
+  margin: 0 10px;
+  border-radius: 15px;
+  padding: 15px;
+  color: var(--text-dark);
+  overflow-y: auto;
+}
+
+/* Item di dalam keranjang */
+.cart-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 10px;
+}
+
+.quantity-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.quantity-control button {
+  background: var(--primary-brown);
+  color: white;
+  border: none;
+  width: 25px;
+  height: 25px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* Footer Keranjang */
+.cart-footer {
+  padding: 20px;
+}
+
+.cart-footer .total {
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
+  margin-bottom: 15px;
+  font-size: 18px;
+}
+
+.btn-bayar {
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: 15px;
+  background: white;
+  color: var(--text-dark);
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: 0.3s;
+}
+
+.btn-bayar:hover {
+  background: #f0f0f0;
+}
+
+/* --- CSS LAPORAN KEUANGAN --- */
+
+/* --- Global Styles & Layout --- */
+:root {
+  --primary-brown: #bc987e;
+  --light-bg: #fffaf5;
+  --text-dark: #4a4a4a;
+  --accent-red: #d94343;
+}
+
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--light-bg);
+  margin: 0;
+  display: flex;
+}
+
+/* --- STATS CARDS --- */
+.stats-container {
+  display: flex;
+  gap: 20px;
+  padding: 30px;
+  margin-left: 200px; /* Sesuaikan dengan lebar sidebar kamu */
+}
+
+.stat-card {
+  background: white;
+  min-width: 200px;
+  padding: 20px;
+  border-radius: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card.active {
+  background-color: var(--primary-brown);
+  color: white;
+}
+
+.stat-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.currency-icon {
+  font-size: 24px;
+  opacity: 0.2;
+  position: absolute;
+  right: 15px;
+  top: 10px;
+}
+
+.stat-card h3 {
+  margin: 0;
+  font-size: 22px;
+}
+
+/* --- REPORT SECTION --- */
+.report-wrapper {
+  margin-left: 230px;
+  padding: 0 30px 30px 30px;
+}
+
+.report-header {
+  background: #fdf5ef;
+  padding: 15px 25px;
+  border-radius: 15px 15px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.date-info {
+  color: #888;
+  font-weight: 500;
+}
+
+.total-badge {
+  background: var(--primary-brown);
+  color: white;
+  padding: 8px 20px;
+  border-radius: 12px;
+  font-weight: bold;
+}
+
+.total-badge span {
+  color: var(--accent-red);
+  background: white;
+  padding: 2px 8px;
+  border-radius: 5px;
+  margin-left: 10px;
+}
+
+/* --- TABLE & ACCORDION --- */
+.table-container {
+  background: white;
+  border-radius: 0 0 15px 15px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.table-head {
+  display: flex;
+  padding: 15px 25px;
+  background: #fcfcfc;
+  color: #aaa;
+  font-size: 13px;
+  text-transform: uppercase;
+  border-bottom: 1px solid #eee;
+}
+
+.row-main,
+.nested-row,
+.week-row,
+.trx-row {
+  display: flex;
+  padding: 15px 25px;
+  border-bottom: 1px solid #f9f9f9;
+  cursor: pointer;
+  align-items: center;
+  transition: 0.2s;
+}
+
+.row-main:hover,
+.nested-row:hover {
+  background: #fffaf5;
+}
+
+/* Kolom Lebar */
+.col-id {
+  flex: 1.5;
+}
+.col-waktu {
+  flex: 2;
+  color: #777;
+  font-size: 14px;
+}
+.col-trans {
+  flex: 0.5;
+  text-align: center;
+}
+.col-jumlah {
+  flex: 1;
+  text-align: right;
+  font-weight: bold;
+}
+
+.red-text {
+  color: var(--accent-red);
+}
+
+/* Arrow Animation */
+.arrow {
+  display: inline-block;
+  transition: 0.3s;
+  margin-right: 10px;
+  font-size: 10px;
+}
+
+.active .arrow {
+  transform: rotate(90deg);
+}
+
+/* Accordion Content */
+.accordion-content {
+  display: none; /* Sembunyi secara default */
+  background: #fdfdfd;
+}
+
+/* Detail Box (Level Terakhir) */
+.detail-box {
+  padding: 20px 40px;
+  background: #f1f1f1;
+}
+
+.detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.detail-table th {
+  background: #eee;
+  padding: 10px;
+  font-size: 12px;
+  text-align: left;
+}
+
+.detail-table td {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  font-size: 13px;
+}
+
+/* --- Badge ID khusus --- */
+.col-id b {
+  color: white;
+  background: #3a7bd5; /* Biru di video */
+  padding: 4px 10px;
+  border-radius: 5px;
+  font-weight: 500;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
