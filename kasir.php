@@ -7,11 +7,6 @@ if($_SESSION['status'] != "login"){
 
 
 
-
-
-
-
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
