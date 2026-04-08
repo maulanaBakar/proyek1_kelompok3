@@ -37,10 +37,10 @@ if($_SESSION['status'] != "login"){
       <div class="bagian-atas">
         <div class="judul-logo">2 PAKSI</div>
         <nav class="daftar-menu">
-          <a href="index.html" class="link-menu">
+          <a href="dashboard.php" class="link-menu">
             <i class="fa-solid fa-house"></i> Beranda
           </a>
-          <a href="kasir.html" class="link-menu aktif">
+          <a href="kasir.php" class="link-menu aktif">
             <i class="fa-solid fa-cash-register"></i> Kasir
           </a>
           <a href="#" class="link-menu">
