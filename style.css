@@ -76,15 +76,6 @@ nav::after {
   margin-left: 10px;
 }
 
-.menu-item .icon img {
-  width: 20px;
-  filter: brightness(0) invert(1);
-}
-
-.menu-item.active .icon img {
-  filter: none;
-}
-
 /* Main Content Area */
 .sidebar-brand {
   text-align: center;
@@ -103,27 +94,37 @@ nav::after {
 
 /* Main Content - Memberi ruang untuk sidebar */
 .main-content {
-  margin-left: 260px; /* SAMA dengan lebar nav */
-  padding: 40px;
-  flex: 1;
+  margin-left: 260px;
+  padding: 30px;
+  background-color: #f5f5f5;
+  min-height: 100vh;
+  width: calc(100% - 260px);
+  max-width: 100% !important;
   display: flex;
   flex-direction: column;
-  gap: 25px; /* Jarak antar bagian (Judul, Card, Tabel) */
-  min-height: 100vh;
+  gap: 20px;
+  box-sizing: border-box;
+}
+
+.header {
+  text-align: left;
+  width: 100%;
 }
 
 .header h1 {
-  color: var(--text-dark);
-  margin-bottom: 30px;
-  font-size: 28px;
+  font-size: 24px;
+  color: #888;
+  margin-bottom: 20px;
+  font-weight: 600;
 }
 
-/* Inventory Controls */
+/* --- INVENTORY CONTROLS --- */
 .inventory-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  width: 100%;
 }
 
 .search-box {
@@ -133,12 +134,15 @@ nav::after {
   display: flex;
   align-items: center;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  flex: 1;
+  max-width: 400px;
 }
 
 .search-box input {
   border: none;
   outline: none;
   margin-left: 10px;
+  width: 100%;
 }
 
 .add-product-btn {
@@ -148,24 +152,48 @@ nav::after {
   border-radius: 12px;
   text-decoration: none;
   font-weight: 500;
+  margin-left: 15px;
 }
 
-/* Table Design */
+/* --- TABLE DESIGN (FULL WIDTH) --- */
 .table-container {
   background: white;
   border-radius: 20px;
-  overflow: hidden;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  padding: 25px;
+  width: 100%;
+  max-width: 100% !important;
+  margin: 0;
+  box-sizing: border-box;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  overflow-x: auto;
 }
 
 table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 800px; /* Agar tabel tidak terlalu gepeng di layar kecil */
 }
 
 thead {
   background-color: var(--primary-brown);
   color: white;
+}
+
+thead th {
+  background-color: #c5a992;
+  color: white;
+  padding: 18px 20px;
+  text-align: left;
+  font-size: 14px;
+}
+
+thead th:first-child {
+  border-radius: 20px 0 0 20px;
+}
+
+thead th:last-child {
+  border-radius: 0 20px 20px 0;
 }
 
 th {
@@ -175,9 +203,10 @@ th {
 }
 
 td {
-  padding: 15px;
-  border-bottom: 1px solid #eee;
-  color: var(--text-dark);
+  padding: 18px 15px;
+  border-bottom: 1px solid #f2f2f2;
+  color: #4a4a4a;
+  font-size: 14px;
 }
 
 .price {
@@ -189,7 +218,7 @@ td {
   width: 20px;
 }
 
-/* Modal Styling */
+/* --- MODAL STYLING --- */
 .modal {
   display: none;
   position: fixed;
@@ -200,6 +229,7 @@ td {
   background: rgba(0, 0, 0, 0.4);
   justify-content: center;
   align-items: center;
+  z-index: 1000;
 }
 
 .modal:target {
@@ -207,11 +237,11 @@ td {
 }
 
 .modal-content {
-  background: white;
+  background-color: #fdf5ef;
   width: 500px;
-  border-radius: 25px;
+  border-radius: 30px;
+  border: none;
   overflow: hidden;
-  animation: slideDown 0.3s ease-out;
 }
 
 .modal-header {
@@ -224,7 +254,8 @@ td {
 }
 
 .modal-header h2 {
-  font-size: 20px;
+  font-size: 18px;
+  font-weight: 600;
 }
 
 .close-btn {
@@ -286,7 +317,6 @@ select {
   border-radius: 12px;
   cursor: pointer;
 }
-
 /* --- Tambahan untuk Halaman Transaksi/Kasir --- */
 
 .main-content {
@@ -439,23 +469,25 @@ body {
 
 /* --- CSS LAPORAN KEUANGAN --- */
 
-/* --- Global Styles & Layout --- */
-
 /* --- STATS CARDS --- */
 .stats-container {
   display: flex;
   gap: 20px;
-  justify-content: flex-start; /* Membuat card rapat ke kiri */
+  justify-content: flex-start;
   padding: 0;
   margin-left: 0;
+  margin-bottom: 30px;
+  width: 100%;
 }
 
 .stat-card {
   background: white;
-  width: 240px; /* Ukuran tetap agar tidak terlalu lebar */
+  flex: 1; /* Agar kartu fleksibel */
+  min-width: 200px;
   padding: 25px;
   border-radius: 20px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  position: relative;
 }
 
 .stat-card.active {
@@ -473,9 +505,6 @@ body {
 .currency-icon {
   font-size: 24px;
   opacity: 0.2;
-  position: absolute;
-  right: 15px;
-  top: 10px;
 }
 
 .stat-card h3 {
@@ -483,16 +512,17 @@ body {
   font-size: 22px;
 }
 
-/* --- REPORT SECTION --- */
+/* Report Section - FULL WIDTH */
 .report-wrapper {
   margin-left: 0;
-  max-width: 900px; /* Membatasi lebar agar tidak terlalu jauh ke kanan */
+  width: 100%; /* Full width */
+  max-width: 100% !important; /* Hapus batasan 900px */
 }
 
 .report-header {
   background: #fdf5ef;
   padding: 15px 25px;
-  border-radius: 15px 15px 0 0;
+  border-radius: 20px 20px 0 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -519,12 +549,14 @@ body {
   margin-left: 10px;
 }
 
-/* --- TABLE & ACCORDION --- */
+/* Table Container - FULL WIDTH */
 .table-container {
   background: white;
-  border-radius: 0 0 15px 15px;
+  border-radius: 0 0 20px 20px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
   overflow: hidden;
+  width: 100%; /* Full width */
+  max-width: 100% !important;
 }
 
 .table-head {
@@ -537,6 +569,7 @@ body {
   border-bottom: 1px solid #eee;
 }
 
+/* Row Styling */
 .row-main,
 .nested-row,
 .week-row,
@@ -554,26 +587,26 @@ body {
   background: #fffaf5;
 }
 
-/* Kolom Lebar */
+/* Column Widths */
 .col-id {
   flex: 1.5;
 }
+
 .col-waktu {
   flex: 2;
   color: #777;
   font-size: 14px;
 }
+
 .col-trans {
   flex: 0.5;
   text-align: center;
 }
+
 .col-jumlah {
   flex: 1;
   text-align: right;
   font-weight: bold;
-}
-
-.red-text {
   color: var(--accent-red);
 }
 
@@ -591,11 +624,11 @@ body {
 
 /* Accordion Content */
 .accordion-content {
-  display: none; /* Sembunyi secara default */
+  display: none;
   background: #fdfdfd;
 }
 
-/* Detail Box (Level Terakhir) */
+/* Detail Box */
 .detail-box {
   padding: 20px 40px;
   background: #f1f1f1;
@@ -623,22 +656,13 @@ body {
   font-size: 13px;
 }
 
-/* --- Badge ID khusus --- */
+/* Badge ID */
 .col-id b {
   color: white;
-  background: #3a7bd5; /* Biru di video */
+  background: #4a90e2;
   padding: 4px 10px;
   border-radius: 5px;
   font-weight: 500;
-}
-
-.report-header {
-  background: #fdf5ef;
-  padding: 15px 25px;
-  border-radius: 20px 20px 0 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .id-badge {
@@ -650,12 +674,6 @@ body {
   align-items: center;
   gap: 8px;
   font-size: 14px;
-}
-
-.col-jumlah {
-  text-align: right;
-  color: var(--accent-red);
-  font-weight: 700;
 }
 
 @keyframes slideDown {
