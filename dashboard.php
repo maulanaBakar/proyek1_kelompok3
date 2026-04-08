@@ -5,7 +5,6 @@ if($_SESSION['status'] != "login"){
 }
 ?>
 
-
 <!doctype html>
 <html lang="id">
   <head>
