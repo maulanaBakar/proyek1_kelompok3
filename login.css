@@ -7,7 +7,6 @@ body {
   justify-content: center;
   margin: 0;
 }
-
 .login-container {
   background: white;
   border-radius: 20px;
@@ -16,7 +15,6 @@ body {
   width: 900px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
-
 .login-form {
   padding: 50px;
   width: 50%;
