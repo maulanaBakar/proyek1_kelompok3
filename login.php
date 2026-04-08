@@ -1,3 +1,12 @@
+<?php 
+if(isset($_GET['pesan'])){
+    if($_GET['pesan'] == "gagal"){
+        echo "<div class='alert alert-danger'>Login gagal! Email atau password salah.</div>";
+    } else if($_GET['pesan'] == "belum_login"){
+        echo "<div class='alert alert-warning'>Anda harus login dulu.</div>";
+    }
+}
+?>
 <!doctype html>
 <html lang="id">
 <head>
