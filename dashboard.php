@@ -47,7 +47,7 @@ if($_SESSION['status'] != "login"){
       </div>
       
       <div class="bagian-bawah">
-        <a href="#" class="link-menu keluar">
+        <a href="logout.php" class="link-menu keluar">
           <i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar
         </a>
       </div>
