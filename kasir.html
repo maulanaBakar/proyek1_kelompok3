@@ -11,12 +11,47 @@
     />
   </head>
   <body>
-    <div class="container">
-      <aside class="sidebar">
-        <div class="logo">
-          <h1>2 Paksi</h1>
-          <p>Sistem Manajemen Toko</p>
+    <aside class="sidebar">
+      <div class="logo">
+        <h1>2 Paksi</h1>
+        <p>Sistem Manajemen Toko</p>
+      </div>
+      <nav>
+        <a href="kasir.html" class="menu-item active">
+          <span class="icon"><i class="fa-solid fa-cart-shopping"></i></span>
+          <span>Kasir</span>
+        </a>
+
+        <a href="inventori.html" class="menu-item">
+          <span class="icon"><i class="fa-solid fa-box"></i></span>
+          <span>Stok barang</span>
+        </a>
+
+        <a href="managemen.html" class="menu-item">
+          <span class="icon"
+            ><i class="fa-solid fa-circle-dollar-to-slot"></i
+          ></span>
+          <span>Laporan keuangan</span>
+        </a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header>
+        <h2>Management Dashboard</h2>
+      </header>
+
+      <!-- PRODUK -->
+      <div class="product-grid">
+        <div class="card">
+          <img src="img/kerupukUdang.jpeg" alt="Kerupuk Udang" />
+          <div class="card-info">
+            <h3>Kerupuk Udang</h3>
+            <p class="price">Rp. 12.000</p>
+            <a href="#item1" class="add-to-cart-btn">+Tambah</a>
+          </div>
         </div>
+<<<<<<< HEAD
         <nav>
           
 
@@ -45,76 +80,50 @@
         </header>
 
         <!-- PRODUK -->
+=======
+>>>>>>> df99e61f8922c8258b51bdac64c26c59226c2b61
         <div class="product-grid">
           <div class="card">
-            <img src="img/kerupukUdang.jpeg" alt="Kerupuk Udang" />
-            <div class="card-info">
-              <h3>Kerupuk Udang</h3>
-              <p class="price">Rp. 12.000</p>
-              <a href="#item1" class="add-to-cart-btn">+Tambah</a>
-            </div>
-          </div>
-        <div class="product-grid">
-          <div class="card">
-            <img src="img/kerupukUdang.jpeg" alt="Kerupuk Udang" />
-            <div class="card-info">
-              <h3>Kerupuk Udang</h3>
-              <p class="price">Rp. 12.000</p>
-              <a href="#item1" class="add-to-cart-btn">+Tambah</a>
-            </div>
-          </div>
-
-          <div class="card">
-            <img src="img/kerupukBawang.jpeg" alt="Kerupuk Bawang" />
+            <img src="img/kerupukBawang.jpeg" alt="Kerupuk Udang" />
             <div class="card-info">
               <h3>Kerupuk Bawang</h3>
-              <p class="price">Rp. 13.000</p>
-              <a href="#item2" class="add-to-cart-btn">+ Tambah</a>
+              <p class="price">Rp. 12.000</p>
+              <a href="#item2" class="add-to-cart-btn">+Tambah</a>
             </div>
           </div>
         </div>
-          <div class="card">
-            <img src="img/kerupukBawang.jpeg" alt="Kerupuk Bawang" />
-            <div class="card-info">
-              <h3>Kerupuk Bawang</h3>
-              <p class="price">Rp. 13.000</p>
-              <a href="#item2" class="add-to-cart-btn">+ Tambah</a>
-            </div>
-          </div>
+      </div>
+    </main>
+
+    <!-- KERANJANG -->
+    <aside class="cart-panel">
+      <div class="cart-title">Keranjang Belanja</div>
+
+      <div class="cart-items">
+        <p class="empty-msg">Keranjang kosong</p>
+
+        <div id="item1" class="cart-item-row">
+          <span>Kerupuk Udang</span>
+          <span>Rp 12.000</span>
+          <a href="#" class="remove-btn">×</a>
         </div>
-      </main>
 
-      <!-- KERANJANG -->
-      <aside class="cart-panel">
-  <div class="cart-title">Keranjang Belanja</div>
-  
-  <div class="cart-items">
-    <p class="empty-msg">Keranjang kosong</p>
+        <div id="item2" class="cart-item-row">
+          <span>Kerupuk Bawang</span>
+          <span>Rp 13.000</span>
+          <a href="#" class="remove-btn">×</a>
+        </div>
+      </div>
 
-    <div id="item1" class="cart-item-row">
-      <span>Kerupuk Udang</span>
-      <span>Rp 12.000</span>
-      <a href="#" class="remove-btn">×</a>
-    </div>
-
-    <div id="item2" class="cart-item-row">
-      <span>Kerupuk Bawang</span>
-      <span>Rp 13.000</span>
-      <a href="#" class="remove-btn">×</a>
-    </div>
-  </div>
-
-  <div class="cart-footer">
-    <div class="total">
-      <span>Total Harga</span>
-      <span>Rp 0</span> 
-    </div>
-    <button class="btn-bayar">
-      <i class="fa-solid fa-money-bill-wave"></i> Bayar
-    </button>
-  </div>
-</aside>
-     
-    
+      <div class="cart-footer">
+        <div class="total">
+          <span>Total Harga</span>
+          <span>Rp 0</span>
+        </div>
+        <button class="btn-bayar">
+          <i class="fa-solid fa-money-bill-wave"></i> Bayar
+        </button>
+      </div>
+    </aside>
   </body>
 </html>
