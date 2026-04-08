@@ -230,7 +230,6 @@ body {
     z-index: 1000;
   }
 
-  /* Logika: Jika checkbox dicentang, pindahkan sidebar ke kanan (muncul) */
   #check-menu:checked ~ .menu-samping {
     transform: translateX(0);
   }
