@@ -20,7 +20,7 @@ if($_SESSION['status'] != "login"){
     <title>2 Paksi | Kasir</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style-kasir.css">
+    <link rel="stylesheet" href="kasir.css">
 </head>
 <body>
 
