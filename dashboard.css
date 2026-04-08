@@ -1,0 +1,247 @@
+/* Pengaturan Warna agar mudah diubah */
+:root {
+  --cokelat-tua: #4a3e3d;
+  --cokelat-muda: #d6c4b0;
+  --putih-tulang: #fdfbf7;
+  --teks-gelap: #3e3636;
+  --teks-abu: #8c7a78;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  background-color: var(--putih-tulang);
+  color: var(--teks-gelap);
+  display: flex;
+}
+
+/* Sembunyikan Checkbox Menu */
+#check-menu {
+  display: none;
+}
+
+/* Header untuk HP */
+.bar-atas-mobile {
+  display: none;
+  background-color: white;
+  padding: 15px;
+  width: 100%;
+  position: fixed;
+  top: 0;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  justify-content: space-between;
+  align-items: center;
+  z-index: 100;
+}
+
+/* Menu Samping (Sidebar) */
+.menu-samping {
+  width: 260px;
+  background-color: var(--cokelat-tua);
+  height: 100vh;
+  position: fixed;
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: 0.3s;
+}
+
+.judul-logo {
+  color: var(--cokelat-muda);
+  font-weight: 800;
+  font-size: 22px;
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.link-menu {
+  display: flex;
+  align-items: center;
+  padding: 12px 15px;
+  color: #ccc;
+  text-decoration: none;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.link-menu i {
+  margin-right: 15px;
+}
+
+.link-menu:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.link-menu.aktif {
+  background: var(--cokelat-muda);
+  color: var(--cokelat-tua);
+}
+
+.link-menu.keluar {
+  color: #ff9999;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 20px;
+}
+
+/* Isi Halaman */
+.isi-halaman {
+  margin-left: 260px;
+  width: 100%;
+  padding: 40px;
+}
+
+.judul-halaman h1 {
+  margin-bottom: 30px;
+  font-size: 24px;
+}
+
+/* Baris Kotak Statistik */
+.baris-kotak {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.kotak-info {
+  background: white;
+  padding: 20px;
+  border-radius: 15px;
+  border: 1px solid #eee;
+}
+
+.label-kecil {
+  font-size: 10px;
+  color: var(--teks-abu);
+  font-weight: 800;
+  margin-bottom: 5px;
+}
+
+.angka-besar {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--cokelat-tua);
+}
+
+.angka-besar span {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--teks-abu);
+}
+
+/* Bagian Bawah (Grafik & Produk) */
+.konten-bawah {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 20px;
+}
+
+.kotak-putih {
+  background: white;
+  padding: 25px;
+  border-radius: 15px;
+  border: 1px solid #eee;
+}
+
+.judul-sub {
+  font-size: 16px;
+  margin-bottom: 20px;
+  border-left: 4px solid var(--cokelat-muda);
+  padding-left: 10px;
+}
+
+/* Grafik CSS */
+.item-grafik {
+  margin-bottom: 15px;
+}
+
+.teks-grafik {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 5px;
+  font-weight: 600;
+}
+
+.jalur-bar {
+  background: #f0f0f0;
+  height: 10px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.isi-bar {
+  background: var(--cokelat-muda);
+  height: 100%;
+  border-radius: 10px;
+}
+
+/* List Produk */
+.item-produk {
+  display: flex;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #f9f9f9;
+}
+
+.foto-produk {
+  width: 45px;
+  height: 45px;
+  background: #eee;
+  border-radius: 8px;
+  margin-right: 15px;
+}
+
+.info-produk h4 {
+  font-size: 14px;
+}
+
+.info-produk p {
+  font-size: 12px;
+  color: var(--teks-abu);
+}
+
+.nomor-urut {
+  margin-left: auto;
+  font-weight: 800;
+  color: var(--cokelat-tua);
+  background: #f0f0f0;
+  padding: 4px 8px;
+  border-radius: 5px;
+  font-size: 12px;
+}
+
+/* Responsif untuk HP */
+@media (max-width: 900px) {
+  .bar-atas-mobile {
+    display: flex;
+  }
+
+  .menu-samping {
+    transform: translateX(-100%);
+    z-index: 1000;
+  }
+
+  /* Logika: Jika checkbox dicentang, pindahkan sidebar ke kanan (muncul) */
+  #check-menu:checked ~ .menu-samping {
+    transform: translateX(0);
+  }
+
+  .isi-halaman {
+    margin-left: 0;
+    padding: 80px 20px 20px;
+  }
+
+  .baris-kotak,
+  .konten-bawah {
+    grid-template-columns: 1fr;
+  }
+}
