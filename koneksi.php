@@ -1,8 +1,9 @@
 <?php
 $host = "localhost";
-$user = "root";        
-$pass = "";             
-$db   = "proyek_2paksi";
+$user = "root";
+$pass = "";
+$db   = "proyek_2paksi"; 
+
 $koneksi = mysqli_connect($host, $user, $pass, $db);
 
 if (!$koneksi) {
