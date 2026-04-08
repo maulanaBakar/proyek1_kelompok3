@@ -85,12 +85,11 @@ nav {
   margin-left: 15px;
 }
 
-<<<<<<< HEAD
 /* Main Content Area */
 .sidebar-brand {
   text-align: center;
   margin-bottom: 40px;
-=======
+}
 .menu-item .icon img {
   width: 20px;
   height: 20px;
@@ -109,7 +108,6 @@ header h2 {
   font-size: 28px;
   margin-bottom: 30px;
   color: var(--text-dark);
->>>>>>> df99e61f8922c8258b51bdac64c26c59226c2b61
 }
 
 .products-section {
@@ -266,15 +264,10 @@ th {
 }
 
 td {
-<<<<<<< HEAD
   padding: 18px 15px;
   border-bottom: 1px solid #f2f2f2;
   color: #4a4a4a;
   font-size: 14px;
-=======
-  padding: 18px;
-  border-bottom: 1px solid #fcf6f1;
->>>>>>> df99e61f8922c8258b51bdac64c26c59226c2b61
 }
 
 .price {
@@ -287,111 +280,7 @@ td {
   opacity: 0.6;
 }
 
-<<<<<<< HEAD
 /* --- MODAL STYLING --- */
-=======
-/* --- LAPORAN KEUANGAN (MANAGEMENT) --- */
-.stats-container {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 30px;
-}
-
-.stat-card {
-  background: white;
-  padding: 25px;
-  border-radius: 20px;
-  flex: 1;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  cursor: pointer;
-}
-
-.stat-card.active {
-  background: var(--primary-brown);
-  color: white;
-}
-
-.stat-header {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 10px;
-  font-size: 14px;
-}
-
-.report-wrapper {
-  background: white;
-  border-radius: 20px;
-  overflow: hidden;
-}
-
-.report-header {
-  padding: 20px 25px;
-  background: #fdf8f4;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.total-badge {
-  background: var(--primary-brown);
-  color: white;
-  padding: 8px 15px;
-  border-radius: 10px;
-  font-weight: 600;
-}
-
-.total-badge span {
-  background: white;
-  color: var(--accent-red);
-  padding: 2px 8px;
-  border-radius: 5px;
-  margin-left: 5px;
-}
-
-/* Accordion Rows */
-.table-head,
-.row-main,
-.nested-row,
-.week-row,
-.trx-row {
-  display: flex;
-  padding: 15px 25px;
-  align-items: center;
-  border-bottom: 1px solid #f9f9f9;
-}
-
-.col-id {
-  flex: 2;
-}
-.col-waktu {
-  flex: 2;
-  color: #888;
-  font-size: 13px;
-}
-.col-trans {
-  flex: 1;
-  text-align: center;
-}
-.col-jumlah {
-  flex: 1.5;
-  text-align: right;
-  font-weight: 700;
-}
-
-.red-text {
-  color: var(--accent-red);
-}
-
-.col-id b {
-  background: #4a90e2;
-  color: white;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 12px;
-}
-
-/* --- MODAL --- */
->>>>>>> df99e61f8922c8258b51bdac64c26c59226c2b61
 .modal {
   display: none;
   position: fixed;
@@ -410,7 +299,6 @@ td {
 .modal-content {
   background-color: #fdf5ef;
   width: 500px;
-<<<<<<< HEAD
   border-radius: 30px;
   border: none;
   overflow: hidden;
@@ -509,14 +397,11 @@ body {
   gap: 20px;
   background: white;
   padding: 25px;
-=======
->>>>>>> df99e61f8922c8258b51bdac64c26c59226c2b61
   border-radius: 20px;
   overflow: hidden;
   animation: slideIn 0.3s ease;
 }
 
-<<<<<<< HEAD
 .card:hover {
   transform: translateY(-5px);
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
@@ -844,9 +729,6 @@ body {
 }
 
 @keyframes slideDown {
-=======
-@keyframes slideIn {
->>>>>>> df99e61f8922c8258b51bdac64c26c59226c2b61
   from {
     transform: translateY(-30px);
     opacity: 0;
