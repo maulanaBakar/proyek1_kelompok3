@@ -31,16 +31,16 @@ if($_SESSION['status'] != "login"){
       <div class="bagian-atas">
         <div class="judul-logo">2 PAKSI</div>
         <nav class="daftar-menu">
-          <a href="#" class="link-menu aktif">
+          <a href="dashboard.php" class="link-menu aktif">
             <i class="fa-solid fa-house"></i> Beranda
           </a>
-          <a href="#" class="link-menu">
+          <a href="kasir.php" class="link-menu">
             <i class="fa-solid fa-cash-register"></i> Kasir
           </a>
-          <a href="#" class="link-menu">
+          <a href="stok-barang.php" class="link-menu">
             <i class="fa-solid fa-box"></i> Stok Barang
           </a>
-          <a href="#" class="link-menu">
+          <a href="laporan.php" class="link-menu">
             <i class="fa-solid fa-file-lines"></i> Laporan
           </a>
         </nav>
