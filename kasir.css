@@ -156,11 +156,11 @@ body {
 /* --- PRODUK GRID --- */
 .produk-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  /* Ubah 160px menjadi 200px atau lebih agar kartu lebih besar */
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 20px;
   align-content: start;
 }
-
 .card-produk {
   background: var(--white);
   padding: 15px;
