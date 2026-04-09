@@ -8,6 +8,7 @@ if (isset($_POST['register'])) {
     $no_hp      = mysqli_real_escape_string($koneksi, $_POST['no_hp']);
     $password   = mysqli_real_escape_string($koneksi, $_POST['password']);
     
+
     if (empty($nama_admin) || empty($email) || empty($password) || empty($no_hp)) {
         echo "<script>alert('Data dalam form kurang !'); window.history.back();</script>";
     } else {
@@ -29,9 +30,6 @@ if (isset($_POST['register'])) {
         }
     }
 }
-?>
-
-
 <!doctype html>
 <html lang="id">
 <head>
