@@ -38,10 +38,10 @@ if($_SESSION['status'] != "login"){
           <a href="kasir.php" class="link-menu aktif">
             <i class="fa-solid fa-cash-register"></i> Kasir
           </a>
-          <a href="#" class="link-menu">
+          <a href="stok.php" class="link-menu">
             <i class="fa-solid fa-box"></i> Stok Barang
           </a>
-          <a href="#" class="link-menu">
+          <a href="management.html" class="link-menu">
             <i class="fa-solid fa-file-lines"></i> Laporan
           </a>
         </nav>

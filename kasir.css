@@ -1,4 +1,3 @@
-/* Warna Utama (Sama dengan Dashboard) */
 :root {
   --cokelat-tua: #4a3e3d;
   --cokelat-muda: #d6c4b0;
@@ -20,7 +19,6 @@ body {
   display: flex;
 }
 
-/* --- SIDEBAR STYLE (SAMA PERSIS DENGAN DASHBOARD) --- */
 #check-menu {
   display: none;
 }
@@ -123,7 +121,6 @@ body {
   padding-left: 10px;
 }
 
-/* --- STYLE KHUSUS KASIR --- */
 .grid-produk {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -165,7 +162,6 @@ body {
   font-weight: 700;
 }
 
-/* --- KERANJANG --- */
 .item-keranjang {
   display: flex;
   justify-content: space-between;
