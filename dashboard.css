@@ -1,4 +1,3 @@
-/* Pengaturan Warna agar mudah diubah */
 :root {
   --cokelat-tua: #4a3e3d;
   --cokelat-muda: #d6c4b0;
@@ -20,7 +19,6 @@ body {
   display: flex;
 }
 
-/* Sembunyikan Checkbox Menu */
 #check-menu {
   display: none;
 }
@@ -39,7 +37,6 @@ body {
   z-index: 100;
 }
 
-/* Menu Samping (Sidebar) */
 .menu-samping {
   width: 260px;
   background-color: var(--cokelat-tua);
@@ -103,7 +100,6 @@ body {
   font-size: 24px;
 }
 
-/* Baris Kotak Statistik */
 .baris-kotak {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -137,7 +133,6 @@ body {
   color: var(--teks-abu);
 }
 
-/* Bagian Bawah (Grafik & Produk) */
 .konten-bawah {
   display: grid;
   grid-template-columns: 1.5fr 1fr;
@@ -158,7 +153,6 @@ body {
   padding-left: 10px;
 }
 
-/* Grafik CSS */
 .item-grafik {
   margin-bottom: 15px;
 }
