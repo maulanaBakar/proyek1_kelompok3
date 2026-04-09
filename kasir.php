@@ -2,20 +2,20 @@
 include 'koneksi.php';
 session_start();
 
-
+// 1. Cek Login
 if($_SESSION['status'] != "login"){
     header("location:login.php?pesan=belum_login");
     exit();
 }
 
-
+// 2. Inisialisasi Keranjang
 if(!isset($_SESSION['keranjang'])) {
     $_SESSION['keranjang'] = [];
 }
 
+// --- 3. LOGIKA SISTEM (TAMBAH, KURANG, HAPUS, BAYAR) ---
 
-
-
+// A. Tambah atau Tambah Kuantitas (+)
 if(isset($_GET['aksi']) && $_GET['aksi'] == "tambah") {
     $id = $_GET['id_produk'];
     $data = mysqli_query($koneksi, "SELECT * FROM produk WHERE id_produk='$id'");
@@ -36,7 +36,7 @@ if(isset($_GET['aksi']) && $_GET['aksi'] == "tambah") {
     exit();
 }
 
-
+// B. Kurangi Kuantitas (-)
 if(isset($_GET['aksi']) && $_GET['aksi'] == "kurang") {
     $id = $_GET['id_produk'];
     if(isset($_SESSION['keranjang'][$id])) {
@@ -49,7 +49,7 @@ if(isset($_GET['aksi']) && $_GET['aksi'] == "kurang") {
     exit();
 }
 
-
+// C. Hapus Item dari Keranjang
 if(isset($_GET['aksi']) && $_GET['aksi'] == "hapus") {
     $id = $_GET['id_produk'];
     unset($_SESSION['keranjang'][$id]);
@@ -57,14 +57,39 @@ if(isset($_GET['aksi']) && $_GET['aksi'] == "hapus") {
     exit();
 }
 
-
+// D. Proses Selesaikan Pembayaran
 if(isset($_POST['proses_bayar'])) {
-   
-    unset($_SESSION['keranjang']); 
-    echo "<script>
-            alert('PEMBAYARAN BERHASIL');
+    if(!empty($_SESSION['keranjang'])) {
+        $total_bayar = $_POST['total_bayar'];
+        $id_admin = $_SESSION['id_admin'] ?? 1;
+        $tgl = date('Y-m-d H:i:s');
+
+        // Simpan ke tabel transaksi
+        $query_t = "INSERT INTO transaksi (id_admin, tanggal_transaksi, total_pendapatan) 
+                    VALUES ('$id_admin', '$tgl', '$total_bayar')";
+        mysqli_query($koneksi, $query_t);
+        $id_transaksi = mysqli_insert_id($koneksi);
+
+        // Simpan ke detail_transaksi & Potong Stok
+        foreach($_SESSION['keranjang'] as $id_p => $item) {
+            $qty = $item['qty'];
+            $subtotal = $item['harga'] * $qty;
+            
+            // Menggunakan nama kolom sesuai database: jumlah_produk & subtotal
+            $query_d = "INSERT INTO detail_transaksi (id_transaksi, id_produk, jumlah_produk, subtotal) 
+                        VALUES ('$id_transaksi', '$id_p', '$qty', '$subtotal')";
+            mysqli_query($koneksi, $query_d);
+
+            // Update stok di tabel produk
+            mysqli_query($koneksi, "UPDATE produk SET stok = stok - $qty WHERE id_produk = '$id_p'");
+        }
+
+        unset($_SESSION['keranjang']);
+        echo "<script>
+            alert('PEMBAYARAN BERHASIL!\\nTotal: Rp " . number_format($total_bayar, 0, ',', '.') . "');
             window.location='kasir.php';
         </script>";
+    }
 }
 ?>
 
@@ -79,6 +104,11 @@ if(isset($_POST['proses_bayar'])) {
     <link rel="stylesheet" href="kasir.css">
 </head>
 <body>
+
+    <div class="mobile-toggle">
+        <div class="brand">2 PAKSI</div>
+        <button id="menu-btn"><i class="fa-solid fa-bars"></i></button>
+    </div>
 
     <div class="sidebar" id="sidebar">
         <div>
@@ -108,9 +138,9 @@ if(isset($_POST['proses_bayar'])) {
                 ?>
                 <a href="?aksi=tambah&id_produk=<?= $p['id_produk'] ?>" class="card-produk">
                     <img src="assets/img/<?= $p['gambar_produk'] ?>" onerror="this.src='https://via.placeholder.com/150?text=Produk'">
-                    <h4><?= $p['nama_produk'] ?></h4>
-                    <p>Rp <?= number_format($p['harga_satuan'], 0, ',', '.') ?></p>
-                    <small>Stok: <?= $p['stok'] ?></small>
+                    <h4 style="font-size: 13px; margin-bottom: 4px; font-weight: 700; color: var(--text-dark);"><?= $p['nama_produk'] ?></h4>
+                    <p style="color: var(--text-muted); font-weight: 700; font-size: 12px; margin-bottom: 2px;">Rp <?= number_format($p['harga_satuan'], 0, ',', '.') ?></p>
+                    <small style="color: #A09391; font-size: 11px; font-weight: 500;">Stok: <?= $p['stok'] ?></small>
                 </a>
                 <?php endwhile; ?>
             </div>
@@ -123,7 +153,7 @@ if(isset($_POST['proses_bayar'])) {
                     if(empty($_SESSION['keranjang'])): ?>
                         <div style="text-align:center; padding: 50px 0; color: #D2C4C3;">
                             <i class="fa-solid fa-basket-shopping" style="font-size: 36px; margin-bottom: 12px;"></i>
-                            <p>Belum ada produk</p>
+                            <p style="font-size: 13px; font-weight: 500;">Belum ada produk</p>
                         </div>
                     <?php else: 
                         foreach($_SESSION['keranjang'] as $id => $item): 
@@ -132,16 +162,16 @@ if(isset($_POST['proses_bayar'])) {
                     ?>
                         <div class="item">
                             <div>
-                                <b><?= $item['nama'] ?></b>
+                                <b style="font-size: 13px; font-weight: 700; color: var(--text-dark);"><?= $item['nama'] ?></b>
                                 <div class="qty-btns">
                                     <a href="?aksi=kurang&id_produk=<?= $id ?>" class="btn-small"><i class="fa-solid fa-minus"></i></a>
-                                    <span><?= $item['qty'] ?></span>
+                                    <span style="font-weight: 700; min-width: 20px; text-align: center; font-size: 13px;"><?= $item['qty'] ?></span>
                                     <a href="?aksi=tambah&id_produk=<?= $id ?>" class="btn-small"><i class="fa-solid fa-plus"></i></a>
                                 </div>
                             </div>
                             <div style="text-align: right;">
-                                <b>Rp <?= number_format($sub, 0, ',', '.') ?></b><br>
-                                <a href="?aksi=hapus&id_produk=<?= $id ?>" style="color: #ef4444; font-size: 11px;"><i class="fa-solid fa-trash"></i> Hapus</a>
+                                <b style="color: var(--sidebar-bg); font-size: 13px;">Rp <?= number_format($sub, 0, ',', '.') ?></b><br>
+                                <a href="?aksi=hapus&id_produk=<?= $id ?>" style="color: #ef4444; text-decoration: none; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-trash" style="font-size: 10px;"></i> Hapus</a>
                             </div>
                         </div>
                     <?php endforeach; endif; ?>
@@ -149,18 +179,35 @@ if(isset($_POST['proses_bayar'])) {
 
                 <div class="cart-footer">
                     <div class="total-row">
-                        <span>Total</span>
-                        <span>Rp <?= number_format($total, 0, ',', '.') ?></span>
+                        <span style="font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">Total</span>
+                        <span style="font-size: 22px; font-weight: 800; color: var(--sidebar-bg);">Rp <?= number_format($total, 0, ',', '.') ?></span>
                     </div>
                     <form method="POST">
                         <input type="hidden" name="total_bayar" value="<?= $total ?>">
                         <button type="submit" name="proses_bayar" class="btn-bayar" <?= ($total == 0) ? 'disabled' : '' ?>>
-                            Selesaikan Pembayaran
+                            <i class="fa-solid fa-check-double" style="margin-right: 6px;"></i> Selesaikan Pembayaran
                         </button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
+
+    <script>
+        // SCRIPT MENU TOGGLE UNTUK HP
+        const menuBtn = document.getElementById('menu-btn');
+        const sidebar = document.getElementById('sidebar');
+        
+        menuBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('active');
+        });
+
+        // Tutup menu saat mengklik di luar sidebar di HP
+        document.addEventListener('click', (e) => {
+            if (!sidebar.contains(e.target) && !menuBtn.contains(e.target) && window.innerWidth <= 992) {
+                sidebar.classList.remove('active');
+            }
+        });
+    </script>
 </body>
 </html>
