@@ -107,6 +107,7 @@ if(isset($_POST['proses_bayar'])) {
         <button id="menu-btn"><i class="fa-solid fa-bars"></i></button>
     </div>
 
+
     <div class="sidebar" id="sidebar">
         <div>
             <div class="logo">2 PAKSI</div>
@@ -121,6 +122,33 @@ if(isset($_POST['proses_bayar'])) {
             <a href="logout.php" class="nav-link logout-link"><i class="fa-solid fa-right-from-bracket"></i> Keluar</a>
         </div>
     </div>
+
+    <aside class="menu-samping">
+      <div class="bagian-atas">
+        <div class="judul-logo">2 PAKSI</div>
+        <nav class="daftar-menu">
+          <a href="dashboard.php" class="link-menu">
+            <i class="fa-solid fa-house"></i> Beranda
+          </a>
+          <a href="kasir.php" class="link-menu aktif">
+            <i class="fa-solid fa-cash-register"></i> Kasir
+          </a>
+          <a href="stok.php" class="link-menu">
+            <i class="fa-solid fa-box"></i> Stok Barang
+          </a>
+          <a href="laporan.php" class="link-menu">
+            <i class="fa-solid fa-file-lines"></i> Laporan
+          </a>
+        </nav>
+      </div>
+      
+      <div class="bagian-bawah">
+        <a href="logout.php" class="link-menu keluar">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar
+        </a>
+      </div>
+    </aside>
+
 
     <div class="content">
         <header class="header">
