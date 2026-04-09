@@ -8,10 +8,10 @@ if (isset($_POST['login'])) {
 
     $query = mysqli_query($koneksi, "SELECT * FROM admin WHERE email='$email'");
     
+    
     if (mysqli_num_rows($query) === 1) {
         $data = mysqli_fetch_assoc($query);
         
-        // Verifikasi password hash
         if (password_verify($password, $data['password'])) {
             $_SESSION['admin'] = $data['username'];
             $_SESSION['status'] = "login"; 

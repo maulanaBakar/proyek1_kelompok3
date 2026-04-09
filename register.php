@@ -2,25 +2,25 @@
 include 'koneksi.php';
 
 if (isset($_POST['register'])) {
+
     $nama_admin = mysqli_real_escape_string($koneksi, $_POST['nama_admin']);
     $email      = mysqli_real_escape_string($koneksi, $_POST['email']);
     $no_hp      = mysqli_real_escape_string($koneksi, $_POST['no_hp']);
-    $password   = $_POST['password'];
+    $password   = mysqli_real_escape_string($koneksi, $_POST['password']);
+    
 
-   
     if (empty($nama_admin) || empty($email) || empty($password) || empty($no_hp)) {
         echo "<script>alert('Data dalam form kurang !'); window.history.back();</script>";
     } else {
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-        
         $cek = mysqli_query($koneksi, "SELECT * FROM admin WHERE email='$email'");
         if (mysqli_num_rows($cek) > 0) {
             echo "<script>alert('Email sudah terdaftar!'); window.history.back();</script>";
         } else {
-           
+
             $query = "INSERT INTO admin (nama_admin, email, password, no_hp) 
-                      VALUES ('$nama_admin', '$email', '$hashed_password', '$no_hp')";
+                      VALUES ('$nama_admin', '$email', '$password', '$no_hp')";
             
             if (mysqli_query($koneksi, $query)) {
                 echo "<script>alert('Registrasi Berhasil! Silakan Login.'); window.location='login.php';</script>";
