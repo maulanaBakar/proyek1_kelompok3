@@ -31,9 +31,6 @@ if (isset($_POST['register'])) {
         }
     }
 }
-?>
-
-
 <!doctype html>
 <html lang="id">
 <head>
