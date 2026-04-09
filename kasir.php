@@ -2,18 +2,14 @@
 include 'koneksi.php';
 session_start();
 
-
 if($_SESSION['status'] != "login"){
     header("location:login.php?pesan=belum_login");
     exit();
 }
 
-
 if(!isset($_SESSION['keranjang'])) {
     $_SESSION['keranjang'] = [];
 }
-
-
 
 
 if(isset($_GET['aksi']) && $_GET['aksi'] == "tambah") {
