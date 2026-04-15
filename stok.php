@@ -86,11 +86,17 @@ if($_SESSION['status'] != "login"){
               <td><span style="color: var(--teks-abu)"><?= htmlspecialchars($row['kategori'] ?? 'Krupuk') ?></span></td>
               <td>Rp <?= number_format($row['harga_satuan'], 0, ',', '.') ?></td>
               <td><strong><?= $row['stok'] ?></strong> <small>Unit</small></td>
-              <td style="text-align: center;">
-                <i class="fa-regular fa-pen-to-square aksi-edit" 
-                   onclick="bukaModal('edit', '<?= $row['id_produk'] ?>', '<?= addslashes($row['nama_produk']) ?>', '<?= $row['stok'] ?>', '<?= addslashes($row['kategori']) ?>', '<?= $row['harga_satuan'] ?>')">
-                </i>
-              </td>
+              <td style="text-align: center; display: flex; gap: 10px; justify-content: center;">
+    <i class="fa-regular fa-pen-to-square aksi-edit" style="color: var(--cokelat-tua);"
+       onclick="bukaModal('edit', '<?= $row['id_produk'] ?>', '<?= addslashes($row['nama_produk']) ?>', '<?= $row['stok'] ?>', '<?= addslashes($row['kategori']) ?>', '<?= $row['harga_satuan'] ?>')">
+    </i>
+
+    <a href="proses_stok.php?hapus=<?= $row['id_produk'] ?>" 
+       onclick="return confirm('Yakin ingin menghapus produk <?= addslashes($row['nama_produk']) ?>?')"
+       class="tombol-hapus-teks">
+       Hapus
+    </a>
+</td>
             </tr>
             <?php endwhile; ?>
           </tbody>

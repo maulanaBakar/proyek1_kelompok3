@@ -157,6 +157,25 @@ td {
   background: var(--teks-gelap);
 }
 
+/* Dekorasi untuk teks hapus */
+.tombol-hapus-teks {
+  background: #fff0f0; /* Latar belakang merah muda lembut */
+  color: #e74c3c; /* Warna teks merah */
+  padding: 8px 15px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: 0.3s;
+  border: 1px solid #fadbd8;
+}
+
+.tombol-hapus-teks:hover {
+  background: #e74c3c; /* Jadi merah saat di-hover */
+  color: white;
+  cursor: pointer;
+}
+
 /* Perbaikan Responsif untuk Tabel */
 @media (max-width: 900px) {
   .header-halaman {
