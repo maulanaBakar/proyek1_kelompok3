@@ -72,6 +72,10 @@ if(isset($_POST['proses_bayar'])) {
     <title>2 Paksi | Kasir Penjualan</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<<<<<<< HEAD
+    
+=======
+>>>>>>> e8cf9bb1e363f7681c13dd9854205cd45c4a92a7
     <link rel="stylesheet" href="kasir.css">
 </head>
 <body>
