@@ -55,12 +55,38 @@ if(isset($_GET['aksi']) && $_GET['aksi'] == "hapus") {
 
 
 if(isset($_POST['proses_bayar'])) {
+    if(!empty ($_SESSION['proses_bayar'])) {
+        $total_bayar = $_POST ['total_bayar'];
+        $tgl = date ("Y-m-d H:i:s ");
+
+        $simpan_transaksi = mysqli_query($koneksi, "INSERT INTO transaksi (tgl_transaksi, total_bayar) VALUES ('$tgl', '$total_bayar')");
+        $id_transaksi = mysqli_insert_id($koneksi);
+
+        if($simpan_transaksi) {
+            foreach($_SESSION['keranjang'] as $id_produk => $item);{
+                $qty = $item ['qty'];
+                $subtotal = $item ['harga'] * $qty;
+
+                mysqli_query($koneksi, "UPDATE produk SET stok = stok - $qty WHERE id_produk = '$id_produk'");
+                // buat nyimpen ke tabel detail id_transaksi
+                mysqli_query($koneksi, "INSERT INTO detail_transaksi (id_transaksi, id_produk, jumlah_produk, subtotal) 
+                                        VALUES ('$id_transaksi', '$id_produk', '$qty', '$subtotal')");
+        }       
+                unset($_SESSION['keranjang']); //buat ngebersihin keranjang
+                echo "<script> alert ('PEMBAYARAN BERHASIL! stok telah diperbarui.')
+                window.location='kasir.php';
+                </script>";
+
+        } 
+
+        
+    }
    
-    unset($_SESSION['keranjang']); 
-    echo "<script>
-            alert('PEMBAYARAN BERHASIL');
-            window.location='kasir.php';
-        </script>";
+    // unset($_SESSION['keranjang']); 
+    // echo "<script>
+    //         alert('PEMBAYARAN BERHASIL');
+    //         window.location='kasir.php';
+    //     </script>";
 }
 ?>
 
