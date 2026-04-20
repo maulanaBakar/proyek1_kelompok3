@@ -135,18 +135,20 @@ if(isset($_POST['proses_bayar'])) {
         
         <div class="main-grid">
             <div class="produk-grid">
-                <?php 
-                $res = mysqli_query($koneksi, "SELECT * FROM produk WHERE stok > 0");
-                while($p = mysqli_fetch_assoc($res)): 
-                ?>
-                <a href="?aksi=tambah&id_produk=<?= $p['id_produk'] ?>" class="card-produk">
-                     <img src="img/?= $p['gambar_produk'] ?>" alt="Produk">
-                    <h4><?= $p['nama_produk'] ?></h4>
-                    <p>Rp <?= number_format($p['harga_satuan'], 0, ',', '.') ?></p>
-                    <small>Stok: <?= $p['stok'] ?></small>
-                </a>
-                <?php endwhile; ?>
-            </div>
+    <?php 
+    $res = mysqli_query($koneksi, "SELECT * FROM produk WHERE stok > 0");
+    while($p = mysqli_fetch_assoc($res)): 
+        // UBAH BAGIAN INI:
+        $path_gambar = (!empty($p['gambar_produk'])) ? 'uploads/' . $p['gambar_produk'] : 'uploads/no-image.png';
+?>
+    <a href="?aksi=tambah&id_produk=<?= $p['id_produk'] ?>" class="card-produk">
+         <img src="<?= $path_gambar ?>" alt="<?= htmlspecialchars($p['nama_produk']) ?>">
+        <h4><?= $p['nama_produk'] ?></h4>
+        <p>Rp <?= number_format($p['harga_satuan'], 0, ',', '.') ?></p>
+        <small>Stok: <?= $p['stok'] ?></small>
+    </a>
+    <?php endwhile; ?>
+</div>
 
             <div class="cart-panel">
                 <div class="cart-header">Item Terpilih</div>
