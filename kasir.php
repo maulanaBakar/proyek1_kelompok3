@@ -11,7 +11,6 @@ if(!isset($_SESSION['keranjang'])) {
     $_SESSION['keranjang'] = [];
 }
 
-
 if(isset($_GET['aksi']) && $_GET['aksi'] == "tambah") {
     $id = $_GET['id_produk'];
     $data = mysqli_query($koneksi, "SELECT * FROM produk WHERE id_produk='$id'");
@@ -28,7 +27,7 @@ if(isset($_GET['aksi']) && $_GET['aksi'] == "tambah") {
             ];
         }
     }
-    header("location:kasir.php");
+    header("location:kasir.php"); 
     exit();
 }
 
@@ -55,12 +54,36 @@ if(isset($_GET['aksi']) && $_GET['aksi'] == "hapus") {
 
 
 if(isset($_POST['proses_bayar'])) {
-   
-    unset($_SESSION['keranjang']); 
-    echo "<script>
-            alert('PEMBAYARAN BERHASIL');
-            window.location='kasir.php';
-        </script>";
+    if(!empty($_SESSION['keranjang'])) {
+        $total_bayar = $_POST['total_bayar'];
+        $tgl = date("Y-m-d H:i:s");
+
+        
+        $query_transaksi = "INSERT INTO transaksi (tanggal_transaksi, total_pendapatan) VALUES ('$tgl', '$total_bayar')";
+        $simpan_transaksi = mysqli_query($koneksi, $query_transaksi);
+        
+        $id_transaksi = mysqli_insert_id($koneksi);
+
+        if($simpan_transaksi) {
+            foreach($_SESSION['keranjang'] as $id_produk => $item) {
+                $qty = $item['qty'];
+                $subtotal = $item['harga'] * $qty;
+
+               
+                mysqli_query($koneksi, "UPDATE produk SET stok = stok - $qty WHERE id_produk = '$id_produk'");
+                
+                
+                mysqli_query($koneksi, "INSERT INTO detail_transaksi (id_transaksi, id_produk, jumlah_produk, subtotal) 
+                                        VALUES ('$id_transaksi', '$id_produk', '$qty', '$subtotal')");
+            }       
+            
+            unset($_SESSION['keranjang']);
+            echo "<script> 
+                    alert('PEMBAYARAN BERHASIL! stok telah diperbarui.');
+                    window.location='kasir.php';
+                  </script>";
+        } 
+    }
 }
 ?>
 
@@ -72,10 +95,7 @@ if(isset($_POST['proses_bayar'])) {
     <title>2 Paksi | Kasir Penjualan</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<<<<<<< HEAD
-    
-=======
->>>>>>> e8cf9bb1e363f7681c13dd9854205cd45c4a92a7
+
     <link rel="stylesheet" href="kasir.css">
 </head>
 <body>
@@ -107,7 +127,8 @@ if(isset($_POST['proses_bayar'])) {
                 while($p = mysqli_fetch_assoc($res)): 
                 ?>
                 <a href="?aksi=tambah&id_produk=<?= $p['id_produk'] ?>" class="card-produk">
-                    <img src="assets/img/<?= $p['gambar_produk'] ?>" onerror="this.src='https://via.placeholder.com/150?text=Produk'">
+                    <!-- <img src="assets/img/<?= $p['gambar_produk'] ?>" onerror="this.src='https://via.placeholder.com/150?text=Produk'"> -->
+                     <img src="assets/img/<?= $p['gambar_produk'] ?>" alt="Produk">
                     <h4><?= $p['nama_produk'] ?></h4>
                     <p>Rp <?= number_format($p['harga_satuan'], 0, ',', '.') ?></p>
                     <small>Stok: <?= $p['stok'] ?></small>
