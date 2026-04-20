@@ -1,135 +1,5 @@
 /* --- VARIABLE & RESET --- */
 :root {
-<<<<<<< HEAD
-    --sidebar-bg: #4A3E3D;
-    --sidebar-hover: rgba(255, 255, 255, 0.08);
-    --accent-color: #D6C4B0;
-    --accent-hover: #C4B19C; 
-    --bg-body: #FDFBF7;
-    --text-dark: #3E3636;
-    --text-muted: #8C7A78;
-    --white: #ffffff;
-    --sidebar-width: 260px;
-    --shadow-sm: 0 1px 3px rgba(74, 62, 61, 0.05);
-    --shadow-md: 0 4px 12px rgba(74, 62, 61, 0.08);
-}
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-}
-
-body {
-    background: var(--bg-body);
-    display: flex;
-    min-height: 100vh;
-    color: var(--text-dark);
-}
-
-/* MOBILE HEADER */
-.mobile-toggle {
-    display: none;
-    background-color: var(--white);
-    padding: 15px 20px;
-    width: 100%;
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 1000;
-    box-shadow: var(--shadow-sm);
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #F2EBE1;
-}
-
-.mobile-toggle .brand {
-    font-weight: 800;
-    color: var(--sidebar-bg);
-}
-
-.mobile-toggle button {
-    background: none;
-    border: none;
-    font-size: 20px;
-    color: var(--sidebar-bg);
-    cursor: pointer;
-}
-
-/* SIDEBAR */
-.sidebar {
-    width: var(--sidebar-width);
-    background-color: var(--sidebar-bg);
-    height: 100vh;
-    position: fixed;
-    padding: 30px 20px;
-    color: white;
-    display: flex;
-    flex-direction: column;
-}
-
-.logo {
-    font-size: 22px;
-    font-weight: 800;
-    text-align: center;
-    color: var(--accent-color);
-}
-
-/* CONTENT */
-.content {
-    margin-left: var(--sidebar-width);
-    width: calc(100% - var(--sidebar-width));
-    padding: 40px 50px;
-}
-
-/* PRODUK */
-.produk-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 20px;
-}
-
-.card-produk {
-    background: var(--white);
-    padding: 15px;
-    border-radius: 20px;
-    text-align: center;
-    text-decoration: none;
-    color: inherit;
-    box-shadow: var(--shadow-sm);
-}
-
-.card-produk:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--shadow-md);
-}
-
-/* RESPONSIVE */
-@media (max-width: 992px) {
-    body {
-        flex-direction: column;
-    }
-
-    .mobile-toggle {
-        display: flex;
-    }
-
-    .sidebar {
-        transform: translateX(-240px);
-    }
-
-    .sidebar.active {
-        transform: translateX(0);
-    }
-
-    .content {
-        margin-left: 0;
-        width: 100%;
-        padding: 90px 20px;
-    }
-}
-=======
   --sidebar-bg: #4a3e3d; /* Cokelat Tua */
   --sidebar-hover: rgba(255, 255, 255, 0.08);
   --accent-color: #d6c4b0; /* Krem/Cokelat Susu */
@@ -157,7 +27,7 @@ body {
   color: var(--text-dark);
 }
 
-/* --- MOBILE HEADER (Hanya muncul di layar kecil) --- */
+/* --- MOBILE HEADER --- */
 .mobile-toggle {
   display: none;
   background-color: var(--white);
@@ -256,11 +126,7 @@ body {
 
 .logout-link {
   color: #fca5a5;
-}
-
-.logout-link:hover {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+  text-decoration: none;
 }
 
 /* --- MAIN CONTENT LAYOUT --- */
@@ -442,4 +308,3 @@ body {
     position: static;
   }
 }
->>>>>>> c4f8f2f6f1b6bc0fdd04d9710932c8b04084515a
