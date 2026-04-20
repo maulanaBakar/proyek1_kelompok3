@@ -2,15 +2,18 @@
 include 'koneksi.php';
 session_start();
 
+// Cek Login
 if($_SESSION['status'] != "login"){
     header("location:login.php?pesan=belum_login");
     exit();
 }
 
+// Inisialisasi Keranjang
 if(!isset($_SESSION['keranjang'])) {
     $_SESSION['keranjang'] = [];
 }
 
+// 1. Logika Tambah Produk ke Keranjang
 if(isset($_GET['aksi']) && $_GET['aksi'] == "tambah") {
     $id = $_GET['id_produk'];
     $data = mysqli_query($koneksi, "SELECT * FROM produk WHERE id_produk='$id'");
@@ -18,7 +21,12 @@ if(isset($_GET['aksi']) && $_GET['aksi'] == "tambah") {
 
     if($p) {
         if(isset($_SESSION['keranjang'][$id])) {
-            $_SESSION['keranjang'][$id]['qty'] += 1;
+            // Cek apakah stok masih mencukupi sebelum menambah qty di keranjang
+            if ($_SESSION['keranjang'][$id]['qty'] < $p['stok']) {
+                $_SESSION['keranjang'][$id]['qty'] += 1;
+            } else {
+                echo "<script>alert('Stok tidak mencukupi!');</script>";
+            }
         } else {
             $_SESSION['keranjang'][$id] = [
                 'nama'  => $p['nama_produk'],
@@ -31,7 +39,7 @@ if(isset($_GET['aksi']) && $_GET['aksi'] == "tambah") {
     exit();
 }
 
-
+// 2. Logika Kurangi Qty
 if(isset($_GET['aksi']) && $_GET['aksi'] == "kurang") {
     $id = $_GET['id_produk'];
     if(isset($_SESSION['keranjang'][$id])) {
@@ -44,7 +52,7 @@ if(isset($_GET['aksi']) && $_GET['aksi'] == "kurang") {
     exit();
 }
 
-
+// 3. Logika Hapus Item
 if(isset($_GET['aksi']) && $_GET['aksi'] == "hapus") {
     $id = $_GET['id_produk'];
     unset($_SESSION['keranjang'][$id]);
@@ -52,16 +60,14 @@ if(isset($_GET['aksi']) && $_GET['aksi'] == "hapus") {
     exit();
 }
 
-
+// 4. Logika Proses Pembayaran (Simpan ke DB)
 if(isset($_POST['proses_bayar'])) {
     if(!empty($_SESSION['keranjang'])) {
         $total_bayar = $_POST['total_bayar'];
         $tgl = date("Y-m-d H:i:s");
 
-        
         $query_transaksi = "INSERT INTO transaksi (tanggal_transaksi, total_pendapatan) VALUES ('$tgl', '$total_bayar')";
         $simpan_transaksi = mysqli_query($koneksi, $query_transaksi);
-        
         $id_transaksi = mysqli_insert_id($koneksi);
 
         if($simpan_transaksi) {
@@ -69,22 +75,25 @@ if(isset($_POST['proses_bayar'])) {
                 $qty = $item['qty'];
                 $subtotal = $item['harga'] * $qty;
 
-               
+                // Update Stok di DB
                 mysqli_query($koneksi, "UPDATE produk SET stok = stok - $qty WHERE id_produk = '$id_produk'");
                 
-                
+                // Simpan Detail Transaksi
                 mysqli_query($koneksi, "INSERT INTO detail_transaksi (id_transaksi, id_produk, jumlah_produk, subtotal) 
                                         VALUES ('$id_transaksi', '$id_produk', '$qty', '$subtotal')");
             }       
             
             unset($_SESSION['keranjang']);
             echo "<script> 
-                    alert('PEMBAYARAN BERHASIL! stok telah diperbarui.');
+                    alert('PEMBAYARAN BERHASIL! Stok telah diperbarui.');
                     window.location='kasir.php';
                   </script>";
         } 
     }
 }
+
+// 5. Logika Pencarian Produk
+$cari = isset($_GET['cari']) ? mysqli_real_escape_string($koneksi, $_GET['cari']) : '';
 ?>
 
 <!DOCTYPE html>
@@ -95,14 +104,42 @@ if(isset($_POST['proses_bayar'])) {
     <title>2 Paksi | Kasir Penjualan</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-
     <link rel="stylesheet" href="kasir.css">
-
     <link rel="stylesheet" href="dashboard.css">
+    <style>
+        /* Tambahan Style untuk Search Bar */
+        .search-wrapper {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        .search-wrapper input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-family: inherit;
+        }
+        .btn-cari {
+            padding: 0 20px;
+            background-color: #5c4033; /* Sesuaikan warna brand Anda */
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        .btn-reset {
+            padding: 12px;
+            color: #666;
+            text-decoration: none;
+            font-size: 14px;
+            align-self: center;
+        }
+    </style>
 </head>
 <body>
 
-   <aside class="menu-samping">
+    <aside class="menu-samping">
       <div class="bagian-atas">
         <div class="judul-logo">2 PAKSI</div>
         <nav class="daftar-menu">
@@ -120,7 +157,6 @@ if(isset($_POST['proses_bayar'])) {
           </a>
         </nav>
       </div>
-      
       <div class="bagian-bawah">
         <a href="logout.php" class="link-menu keluar">
           <i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar
@@ -134,21 +170,47 @@ if(isset($_POST['proses_bayar'])) {
         </header>
         
         <div class="main-grid">
-            <div class="produk-grid">
-    <?php 
-    $res = mysqli_query($koneksi, "SELECT * FROM produk WHERE stok > 0");
-    while($p = mysqli_fetch_assoc($res)): 
-        // UBAH BAGIAN INI:
-        $path_gambar = (!empty($p['gambar_produk'])) ? 'uploads/' . $p['gambar_produk'] : 'uploads/no-image.png';
-?>
-    <a href="?aksi=tambah&id_produk=<?= $p['id_produk'] ?>" class="card-produk">
-         <img src="<?= $path_gambar ?>" alt="<?= htmlspecialchars($p['nama_produk']) ?>">
-        <h4><?= $p['nama_produk'] ?></h4>
-        <p>Rp <?= number_format($p['harga_satuan'], 0, ',', '.') ?></p>
-        <small>Stok: <?= $p['stok'] ?></small>
-    </a>
-    <?php endwhile; ?>
-</div>
+            <div class="produk-section">
+                
+                <form action="" method="GET" class="search-wrapper">
+                    <input type="text" name="cari" placeholder="Cari produk atau kategori..." value="<?= htmlspecialchars($cari) ?>">
+                    <button type="submit" class="btn-cari"><i class="fa-solid fa-magnifying-glass"></i> Cari</button>
+                    <?php if($cari != ""): ?>
+                        <a href="kasir.php" class="btn-reset">Reset</a>
+                    <?php endif; ?>
+                </form>
+
+                <div class="produk-grid">
+                    <?php 
+                    // Query Pencarian
+                    $sql = "SELECT * FROM produk WHERE stok > 0";
+                    if ($cari != "") {
+                        $sql .= " AND (nama_produk LIKE '%$cari%' OR kategori LIKE '%$cari%')";
+                    }
+                    
+                    $res = mysqli_query($koneksi, $sql);
+                    
+                    if(mysqli_num_rows($res) > 0):
+                        while($p = mysqli_fetch_assoc($res)): 
+                            $path_gambar = (!empty($p['gambar_produk'])) ? 'uploads/' . $p['gambar_produk'] : 'uploads/no-image.png';
+                    ?>
+                    <a href="?aksi=tambah&id_produk=<?= $p['id_produk'] ?>" class="card-produk">
+                        <img src="<?= $path_gambar ?>" alt="<?= htmlspecialchars($p['nama_produk']) ?>">
+                        <h4><?= htmlspecialchars($p['nama_produk']) ?></h4>
+                        <p>Rp <?= number_format($p['harga_satuan'], 0, ',', '.') ?></p>
+                        <small>Stok: <?= $p['stok'] ?></small>
+                    </a>
+                    <?php 
+                        endwhile; 
+                    else:
+                    ?>
+                        <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #999;">
+                            <i class="fa-solid fa-box-open" style="font-size: 48px; display: block; margin-bottom: 10px;"></i>
+                            Produk tidak ditemukan.
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
 
             <div class="cart-panel">
                 <div class="cart-header">Item Terpilih</div>
@@ -167,7 +229,7 @@ if(isset($_POST['proses_bayar'])) {
                     ?>
                         <div class="item">
                             <div>
-                                <b><?= $item['nama'] ?></b>
+                                <b><?= htmlspecialchars($item['nama']) ?></b>
                                 <div class="qty-btns">
                                     <a href="?aksi=kurang&id_produk=<?= $id ?>" class="btn-small"><i class="fa-solid fa-minus"></i></a>
                                     <span><?= $item['qty'] ?></span>
@@ -189,7 +251,7 @@ if(isset($_POST['proses_bayar'])) {
                     </div>
                     <form method="POST">
                         <input type="hidden" name="total_bayar" value="<?= $total ?>">
-                        <button type="submit" name="proses_bayar" class="btn-bayar" <?= ($total == 0) ? 'disabled' : '' ?>>
+                        <button type="submit" name="proses_bayar" class="btn-bayar" <?= ($total == 0) ? 'disabled' : '' ?> onclick="return confirm('Proses pembayaran sekarang?')">
                             Selesaikan Pembayaran
                         </button>
                     </form>
