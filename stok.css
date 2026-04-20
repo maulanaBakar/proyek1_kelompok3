@@ -1,11 +1,20 @@
-/* Style Tambahan Khusus Halaman Stok */
+/* --- Global & Header --- */
 .header-halaman {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 20px;
 }
 
+.header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* --- Tombol Tambah --- */
 .btn-tambah {
   background: var(--cokelat-tua);
   color: white;
@@ -27,7 +36,42 @@
   transform: translateY(-2px);
 }
 
-/* Table Style */
+/* --- Search Box --- */
+.search-box {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.search-box input {
+  padding: 10px 15px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  outline: none;
+  width: 250px;
+  height: 42px;
+}
+
+.search-box input:focus {
+  border-color: var(--cokelat-tua);
+}
+
+.btn-cari {
+  background: var(--teks-abu);
+  color: white;
+  padding: 0 15px;
+  height: 42px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.btn-cari:hover {
+  background: var(--teks-gelap);
+}
+
+/* --- Table & Aksi --- */
 .tabel-wadah {
   background: white;
   padding: 20px;
@@ -41,17 +85,14 @@ table {
   width: 100%;
   border-collapse: collapse;
 }
-
 th {
   text-align: left;
   padding: 15px;
   font-size: 11px;
   color: var(--teks-abu);
   text-transform: uppercase;
-  letter-spacing: 1px;
   border-bottom: 2px solid var(--putih-tulang);
 }
-
 td {
   padding: 15px;
   font-size: 14px;
@@ -72,7 +113,24 @@ td {
   color: white;
 }
 
-/* Modal Style */
+.tombol-hapus-teks {
+  background: #fff0f0;
+  color: #e74c3c;
+  padding: 8px 15px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  border: 1px solid #fadbd8;
+  transition: 0.3s;
+}
+
+.tombol-hapus-teks:hover {
+  background: #e74c3c;
+  color: white;
+}
+
+/* --- Modal --- */
 .modal-bg {
   position: fixed;
   top: 0;
@@ -80,13 +138,12 @@ td {
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.5);
-  display: none; /* Default sembunyi */
+  display: none;
   align-items: center;
   justify-content: center;
   z-index: 2000;
   backdrop-filter: blur(4px);
 }
-
 .modal-konten {
   background: white;
   width: 95%;
@@ -95,7 +152,6 @@ td {
   overflow: hidden;
   animation: slideDown 0.3s ease;
 }
-
 @keyframes slideDown {
   from {
     transform: translateY(-20px);
@@ -106,7 +162,6 @@ td {
     opacity: 1;
   }
 }
-
 .modal-head {
   background: var(--cokelat-tua);
   color: var(--cokelat-muda);
@@ -115,11 +170,9 @@ td {
   justify-content: space-between;
   align-items: center;
 }
-
 .modal-body {
   padding: 25px;
 }
-
 .input-grup {
   margin-bottom: 15px;
 }
@@ -136,10 +189,8 @@ td {
   border-radius: 10px;
   border: 1px solid #eee;
   outline: none;
-  font-family: inherit;
   font-size: 14px;
 }
-
 .btn-simpan {
   width: 100%;
   padding: 12px;
@@ -150,41 +201,22 @@ td {
   font-weight: 700;
   cursor: pointer;
   margin-top: 10px;
-  transition: 0.3s;
 }
 
-.btn-simpan:hover {
-  background: var(--teks-gelap);
-}
-
-/* Dekorasi untuk teks hapus */
-.tombol-hapus-teks {
-  background: #fff0f0; /* Latar belakang merah muda lembut */
-  color: #e74c3c; /* Warna teks merah */
-  padding: 8px 15px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 700;
-  text-decoration: none;
-  transition: 0.3s;
-  border: 1px solid #fadbd8;
-}
-
-.tombol-hapus-teks:hover {
-  background: #e74c3c; /* Jadi merah saat di-hover */
-  color: white;
-  cursor: pointer;
-}
-
-/* Perbaikan Responsif untuk Tabel */
-@media (max-width: 900px) {
+/* --- Responsif --- */
+@media (max-width: 768px) {
   .header-halaman {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 15px;
+    align-items: stretch;
   }
-  .btn-tambah {
+  .header-actions {
+    flex-direction: column;
     width: 100%;
-    justify-content: center;
+  }
+  .search-box {
+    width: 100%;
+  }
+  .search-box input {
+    width: 100%;
   }
 }

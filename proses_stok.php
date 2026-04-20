@@ -1,7 +1,6 @@
 <?php
 include 'koneksi.php';
 
-// --- LOGIKA SIMPAN (TAMBAH & EDIT) ---
 if (isset($_POST['save'])) {
     $id_produk    = $_POST['id_produk'];
     $nama_produk  = $_POST['nama_produk'];
@@ -9,18 +8,39 @@ if (isset($_POST['save'])) {
     $kategori     = $_POST['kategori'];
     $harga_jual   = $_POST['harga_jual'];
 
+    // Cek apakah ada file yang diunggah
+    $nama_file = $_FILES['gambar_produk']['name'];
+    $lokasi_file = $_FILES['gambar_produk']['tmp_name'];
+    $folder_tujuan = "uploads/";
+
+    if (!empty($nama_file)) {
+        move_uploaded_file($lokasi_file, $folder_tujuan . $nama_file);
+    }
+
     if (empty($id_produk)) {
-        // Tambah baru
-        $query = "INSERT INTO produk (nama_produk, harga_satuan, stok, kategori) 
-                  VALUES ('$nama_produk', '$harga_jual', '$stok', '$kategori')";
+        // --- INSERT BARU ---
+        $query = "INSERT INTO produk (nama_produk, harga_satuan, stok, kategori, gambar_produk) 
+                  VALUES ('$nama_produk', '$harga_jual', '$stok', '$kategori', '$nama_file')";
     } else {
-        // Edit lama
-        $query = "UPDATE produk SET 
-                  nama_produk = '$nama_produk', 
-                  harga_satuan = '$harga_jual', 
-                  stok = '$stok', 
-                  kategori = '$kategori' 
-                  WHERE id_produk = '$id_produk'";
+        // --- UPDATE ---
+        if (!empty($nama_file)) {
+            // Update dengan gambar baru
+            $query = "UPDATE produk SET 
+                      nama_produk = '$nama_produk', 
+                      harga_satuan = '$harga_jual', 
+                      stok = '$stok', 
+                      kategori = '$kategori',
+                      gambar_produk = '$nama_file' 
+                      WHERE id_produk = '$id_produk'";
+        } else {
+            // Update tanpa mengubah gambar
+            $query = "UPDATE produk SET 
+                      nama_produk = '$nama_produk', 
+                      harga_satuan = '$harga_jual', 
+                      stok = '$stok', 
+                      kategori = '$kategori' 
+                      WHERE id_produk = '$id_produk'";
+        }
     }
 
     if (mysqli_query($koneksi, $query)) {
@@ -30,17 +50,10 @@ if (isset($_POST['save'])) {
     }
 }
 
-// --- LOGIKA HAPUS ---
-// Kita cek apakah ada parameter 'hapus' di URL
-// --- LOGIKA HAPUS ---
+// --- HAPUS ---
 if (isset($_GET['hapus'])) {
     $id = $_GET['hapus'];
-    $query = "DELETE FROM produk WHERE id_produk = '$id'";
-
-    if (mysqli_query($koneksi, $query)) {
-        echo "<script>alert('Data Berhasil Dihapus'); window.location='stok.php';</script>";
-    } else {
-        echo "Gagal hapus: " . mysqli_error($koneksi);
-    }
+    mysqli_query($koneksi, "DELETE FROM produk WHERE id_produk = '$id'");
+    echo "<script>alert('Data Berhasil Dihapus'); window.location='stok.php';</script>";
 }
 ?>
