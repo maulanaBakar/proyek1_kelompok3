@@ -127,8 +127,7 @@ if(isset($_POST['proses_bayar'])) {
                 while($p = mysqli_fetch_assoc($res)): 
                 ?>
                 <a href="?aksi=tambah&id_produk=<?= $p['id_produk'] ?>" class="card-produk">
-                    <!-- <img src="assets/img/<?= $p['gambar_produk'] ?>" onerror="this.src='https://via.placeholder.com/150?text=Produk'"> -->
-                     <img src="assets/img/<?= $p['gambar_produk'] ?>" alt="Produk">
+                     <img src="img/?= $p['gambar_produk'] ?>" alt="Produk">
                     <h4><?= $p['nama_produk'] ?></h4>
                     <p>Rp <?= number_format($p['harga_satuan'], 0, ',', '.') ?></p>
                     <small>Stok: <?= $p['stok'] ?></small>
