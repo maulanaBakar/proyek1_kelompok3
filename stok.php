@@ -59,12 +59,19 @@ if ($_SESSION['status'] != "login") {
 
     <main class="isi-halaman">
         <header class="header-halaman">
-            <h1>Manajemen Stok</h1>
-            <button class="btn-tambah" onclick="bukaModal('tambah')">
-                <i class="fa-solid fa-plus"></i> Tambah Produk
-            </button>
-        </header>
-
+    <h1>Manajemen Stok</h1>
+    
+    <div class="header-actions">
+        <form action="stok.php" method="GET" class="search-box">
+            <input type="text" name="cari" placeholder="Cari nama produk..." value="<?= isset($_GET['cari']) ? htmlspecialchars($_GET['cari']) : '' ?>">
+            <button type="submit" class="btn-cari"><i class="fa-solid fa-search"></i></button>
+        </form>
+        
+        <button class="btn-tambah" type="button" onclick="bukaModal('tambah')">
+            <i class="fa-solid fa-plus"></i> Tambah Produk
+        </button>
+    </div>
+</header>
         <div class="tabel-wadah">
             <table>
                 <thead>
@@ -78,27 +85,36 @@ if ($_SESSION['status'] != "login") {
                 </thead>
                 <tbody>
                     <?php
-                    $res = mysqli_query($koneksi, "SELECT * FROM produk");
-                    while ($row = mysqli_fetch_assoc($res)):
-                    ?>
-                        <tr>
-                            <td><strong><?= htmlspecialchars($row['nama_produk']) ?></strong></td>
-                            <td><span style="color: var(--teks-abu)"><?= htmlspecialchars($row['kategori'] ?? 'Krupuk') ?></span></td>
-                            <td>Rp <?= number_format($row['harga_satuan'], 0, ',', '.') ?></td>
-                            <td><strong><?= $row['stok'] ?></strong> <small>Unit</small></td>
-                            <td style="text-align: center; display: flex; gap: 10px; justify-content: center;">
-                                <i class="fa-regular fa-pen-to-square aksi-edit" style="color: var(--cokelat-tua);"
-                                   onclick="bukaModal('edit', '<?= $row['id_produk'] ?>', '<?= addslashes($row['nama_produk']) ?>', '<?= $row['stok'] ?>', '<?= addslashes($row['kategori']) ?>', '<?= $row['harga_satuan'] ?>')">
-                                </i>
+// Mengambil nilai pencarian
+$cari = isset($_GET['cari']) ? mysqli_real_escape_string($koneksi, $_GET['cari']) : '';
 
-                                <a href="proses_stok.php?hapus=<?= $row['id_produk'] ?>"
-                                   onclick="return confirm('Yakin ingin menghapus produk <?= addslashes($row['nama_produk']) ?>?')"
-                                   class="tombol-hapus-teks">
-                                   Hapus
-                                </a>
-                            </td>
-                        </tr>
-                    <?php endwhile; ?>
+// Membuat Query berdasarkan pencarian
+$sql = "SELECT * FROM produk";
+if ($cari != "") {
+    $sql .= " WHERE nama_produk LIKE '%$cari%' OR kategori LIKE '%$cari%'";
+}
+
+$res = mysqli_query($koneksi, $sql);
+
+while ($row = mysqli_fetch_assoc($res)):
+?>
+    <tr>
+        <td><strong><?= htmlspecialchars($row['nama_produk']) ?></strong></td>
+        <td><span style="color: var(--teks-abu)"><?= htmlspecialchars($row['kategori'] ?? 'Krupuk') ?></span></td>
+        <td>Rp <?= number_format($row['harga_satuan'], 0, ',', '.') ?></td>
+        <td><strong><?= $row['stok'] ?></strong> <small>Unit</small></td>
+        <td style="text-align: center; display: flex; gap: 10px; justify-content: center;">
+            <i class="fa-regular fa-pen-to-square aksi-edit" style="color: var(--cokelat-tua);"
+               onclick="bukaModal('edit', '<?= $row['id_produk'] ?>', '<?= addslashes($row['nama_produk']) ?>', '<?= $row['stok'] ?>', '<?= addslashes($row['kategori']) ?>', '<?= $row['harga_satuan'] ?>')">
+            </i>
+            <a href="proses_stok.php?hapus=<?= $row['id_produk'] ?>"
+               onclick="return confirm('Yakin ingin menghapus produk <?= addslashes($row['nama_produk']) ?>?')"
+               class="tombol-hapus-teks">
+               Hapus
+            </a>
+        </td>
+    </tr>
+<?php endwhile; ?>
                 </tbody>
             </table>
         </div>
@@ -133,6 +149,11 @@ if ($_SESSION['status'] != "login") {
                     <label>Harga Jual (Rp)</label>
                     <input type="number" name="harga_jual" id="mHarga" required>
                 </div>
+
+                <div class="input-grup">
+    <label>Foto Produk</label>
+    <input type="file" name="gambar_produk" accept="image/*">
+</div>
 
                 <button type="submit" name="save" class="btn-simpan" id="mBtn">Simpan Data</button>
             </form>
