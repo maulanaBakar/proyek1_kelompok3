@@ -126,7 +126,7 @@ while ($row = mysqli_fetch_assoc($res)):
                 <h3 id="mTitle">Tambah Produk</h3>
                 <i class="fa-solid fa-xmark" style="cursor: pointer" onclick="tutupModal()"></i>
             </div>
-            <form action="proses_stok.php" method="POST" class="modal-body">
+            <form action="proses_stok.php" method="POST" class="modal-body" enctype="multipart/form-data">
                 <input type="hidden" name="id_produk" id="mId">
 
                 <div class="input-grup">

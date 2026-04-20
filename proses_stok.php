@@ -56,4 +56,17 @@ if (isset($_GET['hapus'])) {
     mysqli_query($koneksi, "DELETE FROM produk WHERE id_produk = '$id'");
     echo "<script>alert('Data Berhasil Dihapus'); window.location='stok.php';</script>";
 }
+
+// Cek apakah ada file yang diunggah
+if (isset($_FILES['gambar_produk']) && $_FILES['gambar_produk']['error'] === 0) {
+    $nama_file = $_FILES['gambar_produk']['name'];
+    $lokasi_file = $_FILES['gambar_produk']['tmp_name'];
+    $folder_tujuan = "uploads/";
+
+    if (move_uploaded_file($lokasi_file, $folder_tujuan . $nama_file)) {
+        // File berhasil di-upload
+    } else {
+        echo "Gagal memindahkan file. Periksa izin folder 'uploads'.";
+    }
+}
 ?>
