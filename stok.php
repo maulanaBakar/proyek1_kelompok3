@@ -105,7 +105,8 @@ while ($row = mysqli_fetch_assoc($res)):
         <td><strong><?= $row['stok'] ?></strong> <small>Unit</small></td>
         <td style="text-align: center; display: flex; gap: 10px; justify-content: center;">
             <i class="fa-regular fa-pen-to-square aksi-edit" style="color: var(--cokelat-tua);"
-               onclick="bukaModal('edit', '<?= $row['id_produk'] ?>', '<?= addslashes($row['nama_produk']) ?>', '<?= $row['stok'] ?>', '<?= addslashes($row['kategori']) ?>', '<?= $row['harga_satuan'] ?>')">
+               // Di dalam loop tabel stok.php
+onclick="bukaModal('edit', '<?= $row['id_produk'] ?>', '<?= addslashes($row['nama_produk']) ?>', '<?= $row['stok'] ?>', '<?= addslashes($row['kategori']) ?>', '<?= $row['harga_satuan'] ?>')"
             </i>
             <a href="proses_stok.php?hapus=<?= $row['id_produk'] ?>"
                onclick="return confirm('Yakin ingin menghapus produk <?= addslashes($row['nama_produk']) ?>?')"
@@ -163,13 +164,13 @@ while ($row = mysqli_fetch_assoc($res)):
     <script>
         const modal = document.getElementById('modalProduk');
 
-        function bukaModal(mode, id = '', nama = '', stok = '', kat = '', harga = '') {
-            modal.style.display = 'flex';
-            document.getElementById('mId').value = id;
-            document.getElementById('mNama').value = nama;
-            document.getElementById('mStok').value = stok;
-            document.getElementById('mKat').value = kat;
-            document.getElementById('mHarga').value = harga;
+        function bukaModal(mode, id = '', nama = '', stok = '', kat = '', harga = '', gambar = '') {
+    modal.style.display = 'flex';
+    document.getElementById('mId').value = id;
+    document.getElementById('mNama').value = nama;
+    document.getElementById('mStok').value = stok;
+    document.getElementById('mKat').value = kat;
+    document.getElementById('mHarga').value = harga;
 
             if (mode === 'edit') {
                 document.getElementById('mTitle').innerText = 'Edit Produk';

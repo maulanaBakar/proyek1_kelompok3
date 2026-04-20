@@ -8,15 +8,37 @@ if (isset($_POST['save'])) {
     $kategori     = $_POST['kategori'];
     $harga_jual   = $_POST['harga_jual'];
 
-    // Cek apakah ada file yang diunggah
-    $nama_file = $_FILES['gambar_produk']['name'];
-    $lokasi_file = $_FILES['gambar_produk']['tmp_name'];
+    // 1. LOGIKA UPLOAD FILE (Hanya di sini saja)
+    $nama_file = ""; 
+    // Cek apakah ada file yang dikirim
+if (!empty($_FILES['gambar_produk']['name'])) {
+    $nama_file = time() . '_' . $_FILES['gambar_produk']['name'];
     $folder_tujuan = "uploads/";
+    $path_lengkap = $folder_tujuan . $nama_file;
 
-    if (!empty($nama_file)) {
-        move_uploaded_file($lokasi_file, $folder_tujuan . $nama_file);
+    // COBA PINDAHKAN FILE
+    if (move_uploaded_file($_FILES['gambar_produk']['tmp_name'], $path_lengkap)) {
+        echo "Upload berhasil!";
+        // Lanjutkan ke proses simpan database...
+    } else {
+        // JIKA GAGAL, KITA LIHAT ERROR-NYA
+        echo "Upload GAGAL!<br>";
+        echo "Error Code: " . $_FILES['gambar_produk']['error'] . "<br>";
+        
+        // Cek izin folder
+        if (!is_writable($folder_tujuan)) {
+            echo "Folder 'uploads/' tidak bisa ditulisi (cek permission/izin folder).<br>";
+        }
+        
+        // Cek apakah folder benar-benar ada
+        if (!is_dir($folder_tujuan)) {
+            echo "Folder 'uploads/' tidak ditemukan!<br>";
+        }
+        exit();
     }
+}
 
+    // 2. PROSES SIMPAN/UPDATE
     if (empty($id_produk)) {
         // --- INSERT BARU ---
         $query = "INSERT INTO produk (nama_produk, harga_satuan, stok, kategori, gambar_produk) 
@@ -33,7 +55,7 @@ if (isset($_POST['save'])) {
                       gambar_produk = '$nama_file' 
                       WHERE id_produk = '$id_produk'";
         } else {
-            // Update tanpa mengubah gambar
+            // Update tanpa mengubah gambar (tetap gunakan gambar lama)
             $query = "UPDATE produk SET 
                       nama_produk = '$nama_produk', 
                       harga_satuan = '$harga_jual', 
@@ -53,20 +75,8 @@ if (isset($_POST['save'])) {
 // --- HAPUS ---
 if (isset($_GET['hapus'])) {
     $id = $_GET['hapus'];
+    // Opsional: Hapus file gambar dari folder sebelum hapus data di database
     mysqli_query($koneksi, "DELETE FROM produk WHERE id_produk = '$id'");
     echo "<script>alert('Data Berhasil Dihapus'); window.location='stok.php';</script>";
-}
-
-// Cek apakah ada file yang diunggah
-if (isset($_FILES['gambar_produk']) && $_FILES['gambar_produk']['error'] === 0) {
-    $nama_file = $_FILES['gambar_produk']['name'];
-    $lokasi_file = $_FILES['gambar_produk']['tmp_name'];
-    $folder_tujuan = "uploads/";
-
-    if (move_uploaded_file($lokasi_file, $folder_tujuan . $nama_file)) {
-        // File berhasil di-upload
-    } else {
-        echo "Gagal memindahkan file. Periksa izin folder 'uploads'.";
-    }
 }
 ?>
