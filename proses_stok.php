@@ -10,11 +10,33 @@ if (isset($_POST['save'])) {
 
     // 1. LOGIKA UPLOAD FILE (Hanya di sini saja)
     $nama_file = ""; 
-    if (!empty($_FILES['gambar_produk']['name'])) {
-        $nama_file = time() . '_' . $_FILES['gambar_produk']['name']; // Memberi nama unik agar tidak tertukar
-        $folder_tujuan = "uploads/";
-        move_uploaded_file($_FILES['gambar_produk']['tmp_name'], $folder_tujuan . $nama_file);
+    // Cek apakah ada file yang dikirim
+if (!empty($_FILES['gambar_produk']['name'])) {
+    $nama_file = time() . '_' . $_FILES['gambar_produk']['name'];
+    $folder_tujuan = "uploads/";
+    $path_lengkap = $folder_tujuan . $nama_file;
+
+    // COBA PINDAHKAN FILE
+    if (move_uploaded_file($_FILES['gambar_produk']['tmp_name'], $path_lengkap)) {
+        echo "Upload berhasil!";
+        // Lanjutkan ke proses simpan database...
+    } else {
+        // JIKA GAGAL, KITA LIHAT ERROR-NYA
+        echo "Upload GAGAL!<br>";
+        echo "Error Code: " . $_FILES['gambar_produk']['error'] . "<br>";
+        
+        // Cek izin folder
+        if (!is_writable($folder_tujuan)) {
+            echo "Folder 'uploads/' tidak bisa ditulisi (cek permission/izin folder).<br>";
+        }
+        
+        // Cek apakah folder benar-benar ada
+        if (!is_dir($folder_tujuan)) {
+            echo "Folder 'uploads/' tidak ditemukan!<br>";
+        }
+        exit();
     }
+}
 
     // 2. PROSES SIMPAN/UPDATE
     if (empty($id_produk)) {
