@@ -97,23 +97,36 @@ if(isset($_POST['proses_bayar'])) {
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="kasir.css">
+
+    <link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
 
-    <div class="sidebar" id="sidebar">
-        <div>
-            <div class="logo">2 PAKSI</div>
-            <div class="nav-menu">
-                <a href="dashboard.php" class="nav-link"><i class="fa-solid fa-gauge"></i> Beranda</a>
-                <a href="kasir.php" class="nav-link active"><i class="fa-solid fa-cash-register"></i> Kasir</a>
-                <a href="stok.php" class="nav-link"><i class="fa-solid fa-box"></i> Stok Barang</a>
-                <a href="laporan.php" class="nav-link"><i class="fa-solid fa-file-invoice-dollar"></i> Laporan</a>
-            </div>
-        </div>
-        <div class="logout-section">
-            <a href="logout.php" class="nav-link logout-link"><i class="fa-solid fa-right-from-bracket"></i> Keluar</a>
-        </div>
-    </div>
+   <aside class="menu-samping">
+      <div class="bagian-atas">
+        <div class="judul-logo">2 PAKSI</div>
+        <nav class="daftar-menu">
+          <a href="dashboard.php" class="link-menu">
+            <i class="fa-solid fa-house"></i> Beranda
+          </a>
+          <a href="kasir.php" class="link-menu aktif">
+            <i class="fa-solid fa-cash-register"></i> Kasir
+          </a>
+          <a href="stok.php" class="link-menu">
+            <i class="fa-solid fa-box"></i> Stok Barang
+          </a>
+          <a href="laporan.php" class="link-menu">
+            <i class="fa-solid fa-file-lines"></i> Laporan
+          </a>
+        </nav>
+      </div>
+      
+      <div class="bagian-bawah">
+        <a href="logout.php" class="link-menu keluar">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar
+        </a>
+      </div>
+    </aside>
 
     <div class="content">
         <header class="header">
