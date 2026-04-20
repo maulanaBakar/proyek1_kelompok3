@@ -2,20 +2,29 @@
 include 'koneksi.php';
 session_start();
 
+<<<<<<< HEAD
 // 1. Cek Login
+=======
+>>>>>>> c4f8f2f6f1b6bc0fdd04d9710932c8b04084515a
 if($_SESSION['status'] != "login"){
     header("location:login.php?pesan=belum_login");
     exit();
 }
 
+<<<<<<< HEAD
 // 2. Inisialisasi Keranjang
+=======
+>>>>>>> c4f8f2f6f1b6bc0fdd04d9710932c8b04084515a
 if(!isset($_SESSION['keranjang'])) {
     $_SESSION['keranjang'] = [];
 }
 
+<<<<<<< HEAD
 // --- 3. LOGIKA SISTEM (TAMBAH, KURANG, HAPUS, BAYAR) ---
 
 // A. Tambah atau Tambah Kuantitas (+)
+=======
+>>>>>>> c4f8f2f6f1b6bc0fdd04d9710932c8b04084515a
 if(isset($_GET['aksi']) && $_GET['aksi'] == "tambah") {
     $id = $_GET['id_produk'];
     $data = mysqli_query($koneksi, "SELECT * FROM produk WHERE id_produk='$id'");
@@ -32,11 +41,19 @@ if(isset($_GET['aksi']) && $_GET['aksi'] == "tambah") {
             ];
         }
     }
+<<<<<<< HEAD
     header("location:kasir.php");
     exit();
 }
 
 // B. Kurangi Kuantitas (-)
+=======
+    header("location:kasir.php"); 
+    exit();
+}
+
+
+>>>>>>> c4f8f2f6f1b6bc0fdd04d9710932c8b04084515a
 if(isset($_GET['aksi']) && $_GET['aksi'] == "kurang") {
     $id = $_GET['id_produk'];
     if(isset($_SESSION['keranjang'][$id])) {
@@ -49,7 +66,11 @@ if(isset($_GET['aksi']) && $_GET['aksi'] == "kurang") {
     exit();
 }
 
+<<<<<<< HEAD
 // C. Hapus Item dari Keranjang
+=======
+
+>>>>>>> c4f8f2f6f1b6bc0fdd04d9710932c8b04084515a
 if(isset($_GET['aksi']) && $_GET['aksi'] == "hapus") {
     $id = $_GET['id_produk'];
     unset($_SESSION['keranjang'][$id]);
@@ -57,6 +78,7 @@ if(isset($_GET['aksi']) && $_GET['aksi'] == "hapus") {
     exit();
 }
 
+<<<<<<< HEAD
 // D. Proses Selesaikan Pembayaran
 if(isset($_POST['proses_bayar'])) {
     if(!empty($_SESSION['keranjang'])) {
@@ -89,6 +111,39 @@ if(isset($_POST['proses_bayar'])) {
             alert('PEMBAYARAN BERHASIL!\\nTotal: Rp " . number_format($total_bayar, 0, ',', '.') . "');
             window.location='kasir.php';
         </script>";
+=======
+
+if(isset($_POST['proses_bayar'])) {
+    if(!empty($_SESSION['keranjang'])) {
+        $total_bayar = $_POST['total_bayar'];
+        $tgl = date("Y-m-d H:i:s");
+
+        
+        $query_transaksi = "INSERT INTO transaksi (tanggal_transaksi, total_pendapatan) VALUES ('$tgl', '$total_bayar')";
+        $simpan_transaksi = mysqli_query($koneksi, $query_transaksi);
+        
+        $id_transaksi = mysqli_insert_id($koneksi);
+
+        if($simpan_transaksi) {
+            foreach($_SESSION['keranjang'] as $id_produk => $item) {
+                $qty = $item['qty'];
+                $subtotal = $item['harga'] * $qty;
+
+               
+                mysqli_query($koneksi, "UPDATE produk SET stok = stok - $qty WHERE id_produk = '$id_produk'");
+                
+                
+                mysqli_query($koneksi, "INSERT INTO detail_transaksi (id_transaksi, id_produk, jumlah_produk, subtotal) 
+                                        VALUES ('$id_transaksi', '$id_produk', '$qty', '$subtotal')");
+            }       
+            
+            unset($_SESSION['keranjang']);
+            echo "<script> 
+                    alert('PEMBAYARAN BERHASIL! stok telah diperbarui.');
+                    window.location='kasir.php';
+                  </script>";
+        } 
+>>>>>>> c4f8f2f6f1b6bc0fdd04d9710932c8b04084515a
     }
 }
 ?>
@@ -101,10 +156,15 @@ if(isset($_POST['proses_bayar'])) {
     <title>2 Paksi | Kasir Penjualan</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<<<<<<< HEAD
+=======
+
+>>>>>>> c4f8f2f6f1b6bc0fdd04d9710932c8b04084515a
     <link rel="stylesheet" href="kasir.css">
 </head>
 <body>
 
+<<<<<<< HEAD
     <div class="mobile-toggle">
         <div class="brand">2 PAKSI</div>
         <button id="menu-btn"><i class="fa-solid fa-bars"></i></button>
@@ -125,6 +185,23 @@ if(isset($_POST['proses_bayar'])) {
         </div>
     </div>
 
+=======
+    <div class="sidebar" id="sidebar">
+        <div>
+            <div class="logo">2 PAKSI</div>
+            <div class="nav-menu">
+                <a href="dashboard.php" class="nav-link"><i class="fa-solid fa-gauge"></i> Beranda</a>
+                <a href="kasir.php" class="nav-link active"><i class="fa-solid fa-cash-register"></i> Kasir</a>
+                <a href="stok.php" class="nav-link"><i class="fa-solid fa-box"></i> Stok Barang</a>
+                <a href="laporan.php" class="nav-link"><i class="fa-solid fa-file-invoice-dollar"></i> Laporan</a>
+            </div>
+        </div>
+        <div class="logout-section">
+            <a href="logout.php" class="nav-link logout-link"><i class="fa-solid fa-right-from-bracket"></i> Keluar</a>
+        </div>
+    </div>
+
+>>>>>>> c4f8f2f6f1b6bc0fdd04d9710932c8b04084515a
     <div class="content">
         <header class="header">
             <h1>Kasir Penjualan</h1>
@@ -137,10 +214,18 @@ if(isset($_POST['proses_bayar'])) {
                 while($p = mysqli_fetch_assoc($res)): 
                 ?>
                 <a href="?aksi=tambah&id_produk=<?= $p['id_produk'] ?>" class="card-produk">
+<<<<<<< HEAD
                     <img src="assets/img/<?= $p['gambar_produk'] ?>" onerror="this.src='https://via.placeholder.com/150?text=Produk'">
                     <h4 style="font-size: 13px; margin-bottom: 4px; font-weight: 700; color: var(--text-dark);"><?= $p['nama_produk'] ?></h4>
                     <p style="color: var(--text-muted); font-weight: 700; font-size: 12px; margin-bottom: 2px;">Rp <?= number_format($p['harga_satuan'], 0, ',', '.') ?></p>
                     <small style="color: #A09391; font-size: 11px; font-weight: 500;">Stok: <?= $p['stok'] ?></small>
+=======
+                    <!-- <img src="assets/img/<?= $p['gambar_produk'] ?>" onerror="this.src='https://via.placeholder.com/150?text=Produk'"> -->
+                     <img src="assets/img/<?= $p['gambar_produk'] ?>" alt="Produk">
+                    <h4><?= $p['nama_produk'] ?></h4>
+                    <p>Rp <?= number_format($p['harga_satuan'], 0, ',', '.') ?></p>
+                    <small>Stok: <?= $p['stok'] ?></small>
+>>>>>>> c4f8f2f6f1b6bc0fdd04d9710932c8b04084515a
                 </a>
                 <?php endwhile; ?>
             </div>
@@ -153,7 +238,11 @@ if(isset($_POST['proses_bayar'])) {
                     if(empty($_SESSION['keranjang'])): ?>
                         <div style="text-align:center; padding: 50px 0; color: #D2C4C3;">
                             <i class="fa-solid fa-basket-shopping" style="font-size: 36px; margin-bottom: 12px;"></i>
+<<<<<<< HEAD
                             <p style="font-size: 13px; font-weight: 500;">Belum ada produk</p>
+=======
+                            <p>Belum ada produk</p>
+>>>>>>> c4f8f2f6f1b6bc0fdd04d9710932c8b04084515a
                         </div>
                     <?php else: 
                         foreach($_SESSION['keranjang'] as $id => $item): 
@@ -162,16 +251,28 @@ if(isset($_POST['proses_bayar'])) {
                     ?>
                         <div class="item">
                             <div>
+<<<<<<< HEAD
                                 <b style="font-size: 13px; font-weight: 700; color: var(--text-dark);"><?= $item['nama'] ?></b>
                                 <div class="qty-btns">
                                     <a href="?aksi=kurang&id_produk=<?= $id ?>" class="btn-small"><i class="fa-solid fa-minus"></i></a>
                                     <span style="font-weight: 700; min-width: 20px; text-align: center; font-size: 13px;"><?= $item['qty'] ?></span>
+=======
+                                <b><?= $item['nama'] ?></b>
+                                <div class="qty-btns">
+                                    <a href="?aksi=kurang&id_produk=<?= $id ?>" class="btn-small"><i class="fa-solid fa-minus"></i></a>
+                                    <span><?= $item['qty'] ?></span>
+>>>>>>> c4f8f2f6f1b6bc0fdd04d9710932c8b04084515a
                                     <a href="?aksi=tambah&id_produk=<?= $id ?>" class="btn-small"><i class="fa-solid fa-plus"></i></a>
                                 </div>
                             </div>
                             <div style="text-align: right;">
+<<<<<<< HEAD
                                 <b style="color: var(--sidebar-bg); font-size: 13px;">Rp <?= number_format($sub, 0, ',', '.') ?></b><br>
                                 <a href="?aksi=hapus&id_produk=<?= $id ?>" style="color: #ef4444; text-decoration: none; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-trash" style="font-size: 10px;"></i> Hapus</a>
+=======
+                                <b>Rp <?= number_format($sub, 0, ',', '.') ?></b><br>
+                                <a href="?aksi=hapus&id_produk=<?= $id ?>" style="color: #ef4444; font-size: 11px;"><i class="fa-solid fa-trash"></i> Hapus</a>
+>>>>>>> c4f8f2f6f1b6bc0fdd04d9710932c8b04084515a
                             </div>
                         </div>
                     <?php endforeach; endif; ?>
@@ -179,19 +280,29 @@ if(isset($_POST['proses_bayar'])) {
 
                 <div class="cart-footer">
                     <div class="total-row">
+<<<<<<< HEAD
                         <span style="font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">Total</span>
                         <span style="font-size: 22px; font-weight: 800; color: var(--sidebar-bg);">Rp <?= number_format($total, 0, ',', '.') ?></span>
+=======
+                        <span>Total</span>
+                        <span>Rp <?= number_format($total, 0, ',', '.') ?></span>
+>>>>>>> c4f8f2f6f1b6bc0fdd04d9710932c8b04084515a
                     </div>
                     <form method="POST">
                         <input type="hidden" name="total_bayar" value="<?= $total ?>">
                         <button type="submit" name="proses_bayar" class="btn-bayar" <?= ($total == 0) ? 'disabled' : '' ?>>
+<<<<<<< HEAD
                             <i class="fa-solid fa-check-double" style="margin-right: 6px;"></i> Selesaikan Pembayaran
+=======
+                            Selesaikan Pembayaran
+>>>>>>> c4f8f2f6f1b6bc0fdd04d9710932c8b04084515a
                         </button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
+<<<<<<< HEAD
 
     <script>
         // SCRIPT MENU TOGGLE UNTUK HP
@@ -209,5 +320,7 @@ if(isset($_POST['proses_bayar'])) {
             }
         });
     </script>
+=======
+>>>>>>> c4f8f2f6f1b6bc0fdd04d9710932c8b04084515a
 </body>
 </html>
