@@ -1,8 +1,26 @@
 <?php 
 session_start();
+include 'koneksi.php'; // WAJIB sertakan koneksi
+
 if($_SESSION['status'] != "login"){
     header("location:login.php");
 }
+
+// Hitung Pendapatan Hari Ini
+$hari_ini = date('Y-m-d');
+$query_pendapatan = mysqli_query($koneksi, "SELECT SUM(total_pendapatan) as total FROM transaksi WHERE DATE(tanggal_transaksi) = '$hari_ini'");
+$data_pendapatan = mysqli_fetch_assoc($query_pendapatan);
+$pendapatan_hari_ini = $data_pendapatan['total'] ?? 0;
+
+//Hitung Total Transaksi Hari Ini
+$query_transaksi = mysqli_query($koneksi, "SELECT COUNT(id_transaksi) as jumlah FROM transaksi WHERE DATE(tanggal_transaksi) = '$hari_ini'");
+$data_transaksi = mysqli_fetch_assoc($query_transaksi);
+$total_transaksi = $data_transaksi['jumlah'] ?? 0;
+
+//Hitung Varian Produk yang Tersedia
+$query_varian = mysqli_query($koneksi, "SELECT COUNT(id_produk) as total_produk FROM produk");
+$data_varian = mysqli_fetch_assoc($query_varian);
+$total_varian = $data_varian['total_produk'] ?? 0;
 ?>
 
 <!doctype html>
@@ -61,41 +79,47 @@ if($_SESSION['status'] != "login"){
         <h1>Ringkasan Penjualan</h1>
       </header>
 
-      <div class="baris-kotak">
-        <div class="kotak-info">
-          <div class="label-kecil">PENDAPATAN HARI INI</div>
-          <div class="angka-besar">Rp 1.500.000</div>
-        </div>
-        <div class="kotak-info">
-          <div class="label-kecil">TOTAL TRANSAKSI</div>
-          <div class="angka-besar">25 <span>Pesanan</span></div>
-        </div>
-        <div class="kotak-info">
-          <div class="label-kecil">VARIAN PRODUK</div>
-          <div class="angka-besar">12 <span>Jenis</span></div>
-        </div>
-      </div>
+   <div class="baris-kotak">
+    <div class="kotak-info">
+        <div class="label-kecil">PENDAPATAN HARI INI</div>
+        <div class="angka-besar">Rp <?= number_format($pendapatan_hari_ini, 0, ',', '.') ?></div>
+    </div>
+    <div class="kotak-info">
+        <div class="label-kecil">TOTAL TRANSAKSI</div>
+        <div class="angka-besar"><?= $total_transaksi ?> <span>Pesanan</span></div>
+    </div>
+    <div class="kotak-info">
+        <div class="label-kecil">VARIAN PRODUK</div>
+        <div class="angka-besar"><?= $total_varian ?> <span>Jenis</span></div>
+    </div>
+</div>
 
       <div class="konten-bawah">
         <div class="kotak-putih">
           <h3 class="judul-sub">Grafik Unit Terjual</h3>
           
-          <div class="wadah-grafik">
-            <div class="item-grafik">
-              <div class="teks-grafik"><span>Krupuk Ikan</span> <span>150</span></div>
-              <div class="jalur-bar"><div class="isi-bar" style="width: 90%;"></div></div>
-            </div>
-
-            <div class="item-grafik">
-              <div class="teks-grafik"><span>Krupuk Udang</span> <span>120</span></div>
-              <div class="jalur-bar"><div class="isi-bar" style="width: 75%;"></div></div>
-            </div>
-
-            <div class="item-grafik">
-              <div class="teks-grafik"><span>Krupuk Kulit</span> <span>95</span></div>
-              <div class="jalur-bar"><div class="isi-bar" style="width: 60%;"></div></div>
-            </div>
-          </div>
+          <div class="kotak-putih">
+    <h3 class="judul-sub">Grafik Unit Terjual</h3>
+    <div class="wadah-grafik">
+        <?php
+        // Ambil 3 produk teratas berdasarkan jumlah terjual
+        $query_grafik = mysqli_query($koneksi, "SELECT p.nama_produk, SUM(d.jumlah_produk) as total_terjual 
+                                                FROM detail_transaksi d 
+                                                JOIN produk p ON d.id_produk = p.id_produk 
+                                                GROUP BY d.id_produk 
+                                                ORDER BY total_terjual DESC LIMIT 3");
+        
+        while($g = mysqli_fetch_assoc($query_grafik)):
+            // Logika sederhana untuk lebar bar (misal max terjual dianggap 200 unit untuk 100% width)
+            $persen = ($g['total_terjual'] / 200) * 100; 
+        ?>
+        <div class="item-grafik">
+            <div class="teks-grafik"><span><?= $g['nama_produk'] ?></span> <span><?= $g['total_terjual'] ?></span></div>
+            <div class="jalur-bar"><div class="isi-bar" style="width: <?= $persen ?>%;"></div></div>
+        </div>
+        <?php endwhile; ?>
+    </div>
+</div>
         </div>
 
         <div class="kotak-putih">
