@@ -292,7 +292,3 @@ tr:last-child td {
     width: 90%;
   }
 }
-.link-menu.aktif {
-  background: var(--cokelat-muda);
-  color: var(--cokelat-tua);
-}
