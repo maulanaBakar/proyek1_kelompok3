@@ -1,27 +1,33 @@
 <?php
 include 'koneksi.php';
-?>
 
+// SISTEM: Menjalankan logika pendaftaran saat tombol ditekan
 if (isset($_POST['register'])) {
 
+    // SISTEM: Mengambil data dan mengamankan input
     $nama_admin = mysqli_real_escape_string($koneksi, $_POST['nama_admin']);
     $email      = mysqli_real_escape_string($koneksi, $_POST['email']);
     $no_hp      = mysqli_real_escape_string($koneksi, $_POST['no_hp']);
-    $password   = mysqli_real_escape_string($koneksi, $_POST['password']);
-    
+    $password   = $_POST['password']; 
 
+    // SISTEM: Cek apakah ada data yang belum diisi
     if (empty($nama_admin) || empty($email) || empty($password) || empty($no_hp)) {
         echo "<script>alert('Data dalam form kurang !'); window.history.back();</script>";
     } else {
-        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-
+        
+        // SISTEM: Validasi email agar tidak ada akun ganda
         $cek = mysqli_query($koneksi, "SELECT * FROM admin WHERE email='$email'");
+        
         if (mysqli_num_rows($cek) > 0) {
             echo "<script>alert('Email sudah terdaftar!'); window.history.back();</script>";
         } else {
+            
+            // SISTEM: Hash password (WAJIB agar bisa login di sistem kamu)
+            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
+            // SISTEM: Simpan ke tabel admin
             $query = "INSERT INTO admin (nama_admin, email, password, no_hp) 
-                      VALUES ('$nama_admin', '$email', '$password', '$no_hp')";
+                      VALUES ('$nama_admin', '$email', '$hashed_password', '$no_hp')";
             
             if (mysqli_query($koneksi, $query)) {
                 echo "<script>alert('Registrasi Berhasil! Silakan Login.'); window.location='login.php';</script>";
@@ -40,7 +46,7 @@ if (isset($_POST['register'])) {
     <title>Daftar - 2 Paksi</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-     <link rel="stylesheet" href="styleregister.css" />
+    <link rel="stylesheet" href="styleregister.css" />
 </head>
 <body>
     <div class="main-card">
