@@ -1,6 +1,7 @@
 <?php
 include 'koneksi.php';
 
+$diskon = mysqli_real_escape_string($koneksi, $_POST['diskon'] ?? 0);
 if (isset($_POST['save'])) {
     $id_produk    = $_POST['id_produk'];
     $nama_produk  = $_POST['nama_produk'];
@@ -41,27 +42,30 @@ if (!empty($_FILES['gambar_produk']['name'])) {
     // 2. PROSES SIMPAN/UPDATE
     if (empty($id_produk)) {
         // --- INSERT BARU ---
-        $query = "INSERT INTO produk (nama_produk, harga_satuan, stok, kategori, gambar_produk) 
-                  VALUES ('$nama_produk', '$harga_jual', '$stok', '$kategori', '$nama_file')";
+       // Bagian INSERT (Tambah Produk)
+$query = "INSERT INTO produk (nama_produk, harga_satuan, stok, kategori, gambar_produk, diskon) 
+          VALUES ('$nama_produk', '$harga_jual', '$stok', '$kategori', '$nama_file', '$diskon')";
     } else {
         // --- UPDATE ---
         if (!empty($nama_file)) {
             // Update dengan gambar baru
-            $query = "UPDATE produk SET 
-                      nama_produk = '$nama_produk', 
-                      harga_satuan = '$harga_jual', 
-                      stok = '$stok', 
-                      kategori = '$kategori',
-                      gambar_produk = '$nama_file' 
-                      WHERE id_produk = '$id_produk'";
+           $query = "UPDATE produk SET 
+          nama_produk = '$nama_produk', 
+          harga_satuan = '$harga_jual', 
+          stok = '$stok', 
+          kategori = '$kategori',
+          diskon = '$diskon',
+          gambar_produk = '$nama_file' 
+          WHERE id_produk = '$id_produk'";
         } else {
             // Update tanpa mengubah gambar (tetap gunakan gambar lama)
-            $query = "UPDATE produk SET 
-                      nama_produk = '$nama_produk', 
-                      harga_satuan = '$harga_jual', 
-                      stok = '$stok', 
-                      kategori = '$kategori' 
-                      WHERE id_produk = '$id_produk'";
+           $query = "UPDATE produk SET 
+          nama_produk = '$nama_produk', 
+          harga_satuan = '$harga_jual', 
+          stok = '$stok', 
+          kategori = '$kategori',
+          diskon = '$diskon'
+          WHERE id_produk = '$id_produk'";
         }
     }
 

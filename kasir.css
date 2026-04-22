@@ -2,7 +2,7 @@
 :root {
   --sidebar-bg: #4a3e3d; /* Cokelat Tua */
   --sidebar-hover: rgba(255, 255, 255, 0.08);
-  --accent-color: #d6c4b0; /* Krem/Cokelat Susu */
+  --accent-color: #d6c4b0;
   --accent-hover: #c4b19c;
   --bg-body: #fdfbf7;
   --text-dark: #3e3636;
@@ -13,6 +13,7 @@
   --shadow-md: 0 4px 12px rgba(74, 62, 61, 0.08);
 }
 
+/* --- RESET & GLOBAL STYLES --- */
 * {
   margin: 0;
   padding: 0;
@@ -27,109 +28,7 @@ body {
   color: var(--text-dark);
 }
 
-/* --- MOBILE HEADER --- */
-.mobile-toggle {
-  display: none;
-  background-color: var(--white);
-  padding: 15px 20px;
-  width: 100%;
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 1000;
-  box-shadow: var(--shadow-sm);
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #f2ebe1;
-}
-
-.mobile-toggle .brand {
-  font-weight: 800;
-  color: var(--sidebar-bg);
-  letter-spacing: 1px;
-}
-
-.mobile-toggle button {
-  background: none;
-  border: none;
-  font-size: 20px;
-  color: var(--sidebar-bg);
-  cursor: pointer;
-}
-
-/* --- SIDEBAR --- */
-.sidebar {
-  width: var(--sidebar-width);
-  background-color: var(--sidebar-bg);
-  height: 100vh;
-  position: fixed;
-  padding: 30px 20px;
-  color: white;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  z-index: 1001;
-  transition: all 0.3s ease;
-}
-
-.logo {
-  font-size: 22px;
-  font-weight: 800;
-  text-align: center;
-  letter-spacing: 1.5px;
-  color: var(--accent-color);
-  padding-bottom: 25px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.nav-menu {
-  list-style: none;
-  margin-top: 25px;
-  flex-grow: 1;
-}
-
-.nav-link {
-  display: flex;
-  align-items: center;
-  padding: 14px 18px;
-  color: #d2c4c3;
-  text-decoration: none;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  margin-bottom: 8px;
-}
-
-.nav-link i {
-  margin-right: 14px;
-  font-size: 18px;
-  width: 20px;
-  text-align: center;
-}
-
-.nav-link:hover {
-  background: var(--sidebar-hover);
-  color: var(--accent-color);
-}
-
-.nav-link.active {
-  background: var(--accent-color);
-  color: var(--sidebar-bg);
-  box-shadow: 0 4px 12px rgba(214, 196, 176, 0.2);
-}
-
-.logout-section {
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  padding-top: 20px;
-}
-
-.logout-link {
-  color: #fca5a5;
-  text-decoration: none;
-}
-
-/* --- MAIN CONTENT LAYOUT --- */
+/* --- MAIN CONTENT --- */
 .content {
   margin-left: var(--sidebar-width);
   width: calc(100% - var(--sidebar-width));
@@ -167,6 +66,7 @@ body {
   box-shadow: var(--shadow-sm);
   transition: 0.3s;
   border: 1px solid #f2ebe1;
+  display: block;
 }
 
 .card-produk:hover {
@@ -281,30 +181,94 @@ body {
   cursor: not-allowed;
 }
 
+/* Opsional: Jika ingin memberi highlight pada harga diskon */
+.harga-diskon {
+  color: #d32f2f;
+  font-weight: 700;
+}
+
+/* Tampilan Modal seperti Nota */
+.modal-content {
+  background: #ffffff;
+  padding: 30px;
+  border-radius: 20px;
+  width: 400px;
+}
+
+.modal-title {
+  font-size: 18px;
+  color: #4a3e3d;
+  border-bottom: 2px solid #fdfbf7;
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+}
+
+/* Styling Baris Produk */
+.item-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px dashed #e0d8d0;
+}
+
+.item-info .nama {
+  display: block;
+  font-weight: 700;
+  color: #4a3e3d;
+  font-size: 14px;
+}
+
+.item-info .qty {
+  font-size: 12px;
+  color: #8c7a78;
+}
+
+.item-price {
+  font-weight: 700;
+  color: #4a3e3d;
+  font-size: 14px;
+  align-self: center;
+}
+
+/* Total Section (Jika ingin ditambah) */
+.total-nota {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+  padding-top: 10px;
+  border-top: 2px solid #4a3e3d;
+  font-weight: 800;
+  color: #4a3e3d;
+}
+
 /* --- RESPONSIVE MOBILE --- */
 @media (max-width: 992px) {
   body {
     flex-direction: column;
   }
-  .mobile-toggle {
-    display: flex;
-  }
+
   .sidebar {
     width: 240px;
     transform: translateX(-240px);
+    position: fixed;
   }
+
   .sidebar.active {
     transform: translateX(0);
   }
+
   .content {
     margin-left: 0;
     width: 100%;
     padding: 90px 20px 30px 20px;
   }
+
   .main-grid {
     grid-template-columns: 1fr;
   }
+
   .cart-panel {
     position: static;
+    margin-top: 20px;
   }
 }

@@ -28,10 +28,12 @@ if(isset($_GET['aksi']) && $_GET['aksi'] == "tambah") {
                 echo "<script>alert('Stok tidak mencukupi!');</script>";
             }
         } else {
+            // Tambah baru dengan diskon
             $_SESSION['keranjang'][$id] = [
-                'nama'  => $p['nama_produk'],
-                'harga' => $p['harga_satuan'],
-                'qty'   => 1
+                'nama'   => $p['nama_produk'],
+                'harga'  => $p['harga_satuan'],
+                'qty'    => 1,
+                'diskon' => $p['diskon'] 
             ];
         }
     }
@@ -73,7 +75,10 @@ if(isset($_POST['proses_bayar'])) {
         if($simpan_transaksi) {
             foreach($_SESSION['keranjang'] as $id_produk => $item) {
                 $qty = $item['qty'];
-                $subtotal = $item['harga'] * $qty;
+                // Hitung subtotal dengan diskon
+                $diskon = isset($item['diskon']) ? $item['diskon'] : 0;
+                $harga_setelah_diskon = $item['harga'] - ($item['harga'] * $diskon / 100);
+                $subtotal = $harga_setelah_diskon * $qty;
 
                 // Update Stok di DB
                 mysqli_query($koneksi, "UPDATE produk SET stok = stok - $qty WHERE id_produk = '$id_produk'");
@@ -88,7 +93,7 @@ if(isset($_POST['proses_bayar'])) {
                     alert('PEMBAYARAN BERHASIL! Stok telah diperbarui.');
                     window.location='kasir.php';
                   </script>";
-        } 
+        }   
     }
 }
 
@@ -143,31 +148,22 @@ $cari = isset($_GET['cari']) ? mysqli_real_escape_string($koneksi, $_GET['cari']
       <div class="bagian-atas">
         <div class="judul-logo">2 PAKSI</div>
         <nav class="daftar-menu">
-          <a href="dashboard.php" class="link-menu">
-            <i class="fa-solid fa-house"></i> Beranda
-          </a>
-          <a href="kasir.php" class="link-menu aktif">
-            <i class="fa-solid fa-cash-register"></i> Kasir
-          </a>
-          <a href="stok.php" class="link-menu">
-            <i class="fa-solid fa-box"></i> Stok Barang
-          </a>
-          <a href="laporan.php" class="link-menu">
-            <i class="fa-solid fa-file-lines"></i> Laporan
+          <a href="dashboard.php" class="link-menu"><i class="fa-solid fa-house"></i> Beranda</a>
+          <a href="kasir.php" class="link-menu aktif"><i class="fa-solid fa-cash-register"></i> Kasir</a>
+          <a href="stok.php" class="link-menu"><i class="fa-solid fa-box"></i> Stok Barang</a>
+          <a href="laporan.php" class="link-menu"><i class="fa-solid fa-file-lines"></i> Laporan</a>
+          <a href="pengaturan.php" class="link-menu">
+           <i class="fa-solid fa-gear"></i> <span>Pengaturan</span>
           </a>
         </nav>
       </div>
       <div class="bagian-bawah">
-        <a href="logout.php" class="link-menu keluar">
-          <i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar
-        </a>
+        <a href="logout.php" class="link-menu keluar"><i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar</a>
       </div>
     </aside>
 
     <div class="content">
-        <header class="header">
-            <h1>Kasir Penjualan</h1>
-        </header>
+        <header class="header"><h1>Kasir Penjualan</h1></header>
         
         <div class="main-grid">
             <div class="produk-section">
@@ -224,24 +220,36 @@ $cari = isset($_GET['cari']) ? mysqli_real_escape_string($koneksi, $_GET['cari']
                         </div>
                     <?php else: 
                         foreach($_SESSION['keranjang'] as $id => $item): 
-                        $sub = $item['harga'] * $item['qty'];
-                        $total += $sub;
+                            $diskon = isset($item['diskon']) ? $item['diskon'] : 0;
+                            $harga_final = $item['harga'] - ($item['harga'] * $diskon / 100);
+                            $sub = $harga_final * $item['qty'];
+                            $total += $sub;
                     ?>
-                        <div class="item">
+                        <div class="item" style="border-bottom: 1px solid #eee; padding: 10px 0; display: flex; justify-content: space-between; align-items: center;">
                             <div>
                                 <b><?= htmlspecialchars($item['nama']) ?></b>
                                 <div class="qty-btns">
                                     <a href="?aksi=kurang&id_produk=<?= $id ?>" class="btn-small"><i class="fa-solid fa-minus"></i></a>
-                                    <span><?= $item['qty'] ?></span>
+                                    <span style="margin: 0 10px;"><?= $item['qty'] ?></span>
                                     <a href="?aksi=tambah&id_produk=<?= $id ?>" class="btn-small"><i class="fa-solid fa-plus"></i></a>
                                 </div>
                             </div>
+                            
                             <div style="text-align: right;">
-                                <b>Rp <?= number_format($sub, 0, ',', '.') ?></b><br>
-                                <a href="?aksi=hapus&id_produk=<?= $id ?>" style="color: #ef4444; font-size: 11px;"><i class="fa-solid fa-trash"></i> Hapus</a>
+                                <?php if($diskon > 0): ?>
+                                    <small style="text-decoration: line-through; color: #999; font-size: 11px;">
+                                        Rp <?= number_format($item['harga'], 0, ',', '.') ?>
+                                    </small><br>
+                                    <b style="color: #27ae60;">Rp <?= number_format($harga_final, 0, ',', '.') ?></b>
+                                <?php else: ?>
+                                    <b>Rp <?= number_format($item['harga'], 0, ',', '.') ?></b>
+                                <?php endif; ?>
+                                <br>
+                                <a href="?aksi=hapus&id_produk=<?= $id ?>" style="color: #ef4444; font-size: 11px; text-decoration: none;"><i class="fa-solid fa-trash"></i> Hapus</a>
                             </div>
                         </div>
-                    <?php endforeach; endif; ?>
+                    <?php endforeach; 
+                    endif; ?>
                 </div>
 
                 <div class="cart-footer">
