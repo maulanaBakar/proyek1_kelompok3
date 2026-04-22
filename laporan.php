@@ -56,36 +56,52 @@ if ($view == 'bulan') {
 <title>2 Paksi | Laporan</title>
 
 <link rel="stylesheet" href="laporan.css">
+<link rel="stylesheet" href="dashboard.css">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
 
 <!-- MOBILE HEADER -->
-<div class="mobile-toggle">
-    <div class="brand">2 PAKSI</div>
-    <button id="menu-btn"><i class="fa-solid fa-bars"></i></button>
-</div>
+<div class="bar-atas-mobile">
+        <div class="nama-toko">2 PAKSI</div>
+        <label for="check-menu" class="tombol-buka">
+            <i class="fa-solid fa-bars"></i>
+        </label>
+    </div>
 
 <!-- SIDEBAR -->
-<div class="sidebar" id="sidebar">
-    <div>
-        <div class="logo">2 PAKSI</div>
+<aside class="menu-samping">
+      <div class="bagian-atas">
+        <div class="judul-logo">2 PAKSI</div>
+        <nav class="daftar-menu">
+          <a href="dashboard.php" class="link-menu aktif">
+            <i class="fa-solid fa-house"></i> Beranda
+          </a>
+          <a href="kasir.php" class="link-menu">
+            <i class="fa-solid fa-cash-register"></i> Kasir
+          </a>
+          <a href="stok.php" class="link-menu">
+            <i class="fa-solid fa-box"></i> Stok Barang
+          </a>
+          <a href="laporan.php" class="link-menu">
+            <i class="fa-solid fa-file-lines"></i> Laporan
+          </a>
+          <a href="pengaturan.php" class="link-menu">
+           <i class="fa-solid fa-gear"></i> <span>Pengaturan</span>
+          </a>
 
-        <div class="nav-menu">
-            <a href="dashboard.php" class="nav-link"><i class="fa-solid fa-gauge"></i> Beranda</a>
-            <a href="kasir.php" class="nav-link"><i class="fa-solid fa-cash-register"></i> Kasir</a>
-            <a href="stok.php" class="nav-link"><i class="fa-solid fa-box"></i> Stok Barang</a>
-            <a href="laporan.php" class="nav-link active"><i class="fa-solid fa-file-invoice-dollar"></i> Laporan</a>
-        </div>
-    </div>
-
-    <div class="logout-section">
-        <a href="logout.php" class="nav-link logout-link">
-            <i class="fa-solid fa-right-from-bracket"></i> Keluar
+        </nav>
+      </div>
+      
+      <div class="bagian-bawah">
+        <a href="logout.php" class="link-menu keluar">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar
         </a>
-    </div>
-</div>
+      </div>
+    </aside>
+
+
 
 <!-- CONTENT -->
 <main class="content">
@@ -196,6 +212,41 @@ if ($view == 'bulan') {
         <div id="modal-body">Memuat data...</div>
     </div>
 </div>
+
+<script>
+// Logika untuk menampilkan detail
+function showDetail(id) {
+    var modal = document.getElementById("myModal");
+    var modalBody = document.getElementById("modal-body");
+    
+    modal.style.display = "block";
+    modalBody.innerHTML = "Memuat data...";
+
+    // Mengambil data dari get_detail.php
+    fetch('get_detail.php?id=' + id)
+        .then(response => response.text())
+        .then(data => {
+            modalBody.innerHTML = data;
+        })
+        .catch(error => {
+            modalBody.innerHTML = "Gagal memuat data.";
+        });
+}
+
+// Logika untuk menutup modal
+var modal = document.getElementById("myModal");
+var span = document.getElementsByClassName("close")[0];
+
+span.onclick = function() {
+    modal.style.display = "none";
+}
+
+window.onclick = function(event) {
+    if (event.target == modal) {
+        modal.style.display = "none";
+    }
+}
+</script>
 
 <script src="laporan.js"></script>
 </body>

@@ -2,15 +2,18 @@
 include 'koneksi.php';
 session_start();
 
+// Cek Login
 if($_SESSION['status'] != "login"){
     header("location:login.php?pesan=belum_login");
     exit();
 }
 
+// Inisialisasi Keranjang
 if(!isset($_SESSION['keranjang'])) {
     $_SESSION['keranjang'] = [];
 }
 
+// 1. Logika Tambah Produk ke Keranjang
 if(isset($_GET['aksi']) && $_GET['aksi'] == "tambah") {
     $id = $_GET['id_produk'];
     $data = mysqli_query($koneksi, "SELECT * FROM produk WHERE id_produk='$id'");
@@ -18,12 +21,19 @@ if(isset($_GET['aksi']) && $_GET['aksi'] == "tambah") {
 
     if($p) {
         if(isset($_SESSION['keranjang'][$id])) {
-            $_SESSION['keranjang'][$id]['qty'] += 1;
+            // Cek stok
+            if ($_SESSION['keranjang'][$id]['qty'] < $p['stok']) {
+                $_SESSION['keranjang'][$id]['qty'] += 1;
+            } else {
+                echo "<script>alert('Stok tidak mencukupi!');</script>";
+            }
         } else {
+            // Tambah baru dengan diskon
             $_SESSION['keranjang'][$id] = [
-                'nama'  => $p['nama_produk'],
-                'harga' => $p['harga_satuan'],
-                'qty'   => 1
+                'nama'   => $p['nama_produk'],
+                'harga'  => $p['harga_satuan'],
+                'qty'    => 1,
+                'diskon' => $p['diskon'] 
             ];
         }
     }
@@ -31,7 +41,7 @@ if(isset($_GET['aksi']) && $_GET['aksi'] == "tambah") {
     exit();
 }
 
-
+// 2. Logika Kurangi Qty
 if(isset($_GET['aksi']) && $_GET['aksi'] == "kurang") {
     $id = $_GET['id_produk'];
     if(isset($_SESSION['keranjang'][$id])) {
@@ -44,7 +54,7 @@ if(isset($_GET['aksi']) && $_GET['aksi'] == "kurang") {
     exit();
 }
 
-
+// 3. Logika Hapus Item
 if(isset($_GET['aksi']) && $_GET['aksi'] == "hapus") {
     $id = $_GET['id_produk'];
     unset($_SESSION['keranjang'][$id]);
@@ -52,39 +62,43 @@ if(isset($_GET['aksi']) && $_GET['aksi'] == "hapus") {
     exit();
 }
 
-
+// 4. Logika Proses Pembayaran (Simpan ke DB)
 if(isset($_POST['proses_bayar'])) {
     if(!empty($_SESSION['keranjang'])) {
         $total_bayar = $_POST['total_bayar'];
         $tgl = date("Y-m-d H:i:s");
 
-        
         $query_transaksi = "INSERT INTO transaksi (tanggal_transaksi, total_pendapatan) VALUES ('$tgl', '$total_bayar')";
         $simpan_transaksi = mysqli_query($koneksi, $query_transaksi);
-        
         $id_transaksi = mysqli_insert_id($koneksi);
 
         if($simpan_transaksi) {
             foreach($_SESSION['keranjang'] as $id_produk => $item) {
                 $qty = $item['qty'];
-                $subtotal = $item['harga'] * $qty;
+                // Hitung subtotal dengan diskon
+                $diskon = isset($item['diskon']) ? $item['diskon'] : 0;
+                $harga_setelah_diskon = $item['harga'] - ($item['harga'] * $diskon / 100);
+                $subtotal = $harga_setelah_diskon * $qty;
 
-               
+                // Update Stok di DB
                 mysqli_query($koneksi, "UPDATE produk SET stok = stok - $qty WHERE id_produk = '$id_produk'");
                 
-                
+                // Simpan Detail Transaksi
                 mysqli_query($koneksi, "INSERT INTO detail_transaksi (id_transaksi, id_produk, jumlah_produk, subtotal) 
                                         VALUES ('$id_transaksi', '$id_produk', '$qty', '$subtotal')");
             }       
             
             unset($_SESSION['keranjang']);
             echo "<script> 
-                    alert('PEMBAYARAN BERHASIL! stok telah diperbarui.');
+                    alert('PEMBAYARAN BERHASIL! Stok telah diperbarui.');
                     window.location='kasir.php';
                   </script>";
-        } 
+        }   
     }
 }
+
+// 5. Logika Pencarian Produk
+$cari = isset($_GET['cari']) ? mysqli_real_escape_string($koneksi, $_GET['cari']) : '';
 ?>
 
 <!DOCTYPE html>
@@ -95,60 +109,85 @@ if(isset($_POST['proses_bayar'])) {
     <title>2 Paksi | Kasir Penjualan</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-
     <link rel="stylesheet" href="kasir.css">
-
     <link rel="stylesheet" href="dashboard.css">
+    <style>
+        .search-wrapper { margin-bottom: 20px; display: flex; gap: 10px; }
+        .search-wrapper input { flex: 1; padding: 12px 15px; border: 1px solid #ddd; border-radius: 10px; font-family: inherit; }
+        .btn-cari { padding: 0 20px; background-color: #5c4033; color: white; border: none; border-radius: 10px; cursor: pointer; }
+        .btn-reset { padding: 12px; color: #666; text-decoration: none; font-size: 14px; align-self: center; }
+    </style>
 </head>
 <body>
 
-   <aside class="menu-samping">
+    <aside class="menu-samping">
       <div class="bagian-atas">
         <div class="judul-logo">2 PAKSI</div>
         <nav class="daftar-menu">
-          <a href="dashboard.php" class="link-menu">
-            <i class="fa-solid fa-house"></i> Beranda
-          </a>
-          <a href="kasir.php" class="link-menu aktif">
-            <i class="fa-solid fa-cash-register"></i> Kasir
-          </a>
-          <a href="stok.php" class="link-menu">
-            <i class="fa-solid fa-box"></i> Stok Barang
-          </a>
-          <a href="laporan.php" class="link-menu">
-            <i class="fa-solid fa-file-lines"></i> Laporan
+          <a href="dashboard.php" class="link-menu"><i class="fa-solid fa-house"></i> Beranda</a>
+          <a href="kasir.php" class="link-menu aktif"><i class="fa-solid fa-cash-register"></i> Kasir</a>
+          <a href="stok.php" class="link-menu"><i class="fa-solid fa-box"></i> Stok Barang</a>
+          <a href="laporan.php" class="link-menu"><i class="fa-solid fa-file-lines"></i> Laporan</a>
+          <a href="pengaturan.php" class="link-menu">
+           <i class="fa-solid fa-gear"></i> <span>Pengaturan</span>
           </a>
         </nav>
       </div>
-      
       <div class="bagian-bawah">
-        <a href="logout.php" class="link-menu keluar">
-          <i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar
-        </a>
+        <a href="logout.php" class="link-menu keluar"><i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar</a>
       </div>
     </aside>
 
     <div class="content">
-        <header class="header">
-            <h1>Kasir Penjualan</h1>
-        </header>
+        <header class="header"><h1>Kasir Penjualan</h1></header>
         
         <div class="main-grid">
-            <div class="produk-grid">
-    <?php 
-    $res = mysqli_query($koneksi, "SELECT * FROM produk WHERE stok > 0");
-    while($p = mysqli_fetch_assoc($res)): 
-        // UBAH BAGIAN INI:
-        $path_gambar = (!empty($p['gambar_produk'])) ? 'uploads/' . $p['gambar_produk'] : 'uploads/no-image.png';
-?>
-    <a href="?aksi=tambah&id_produk=<?= $p['id_produk'] ?>" class="card-produk">
-         <img src="<?= $path_gambar ?>" alt="<?= htmlspecialchars($p['nama_produk']) ?>">
-        <h4><?= $p['nama_produk'] ?></h4>
-        <p>Rp <?= number_format($p['harga_satuan'], 0, ',', '.') ?></p>
-        <small>Stok: <?= $p['stok'] ?></small>
-    </a>
-    <?php endwhile; ?>
-</div>
+            <div class="produk-section">
+                <form action="" method="GET" class="search-wrapper">
+                    <input type="text" name="cari" placeholder="Cari produk atau kategori..." value="<?= htmlspecialchars($cari) ?>">
+                    <button type="submit" class="btn-cari"><i class="fa-solid fa-magnifying-glass"></i> Cari</button>
+                    <?php if($cari != ""): ?><a href="kasir.php" class="btn-reset">Reset</a><?php endif; ?>
+                </form>
+
+                <div class="produk-grid">
+                    <?php 
+                    $sql = "SELECT * FROM produk WHERE stok > 0";
+                    if ($cari != "") { $sql .= " AND (nama_produk LIKE '%$cari%' OR kategori LIKE '%$cari%')"; }
+                    $res = mysqli_query($koneksi, $sql);
+                    
+                    if(mysqli_num_rows($res) > 0):
+                        while($p = mysqli_fetch_assoc($res)):
+                            $path_gambar = (!empty($p['gambar_produk'])) ? 'uploads/' . $p['gambar_produk'] : 'uploads/no-image.png';
+                            $diskon = isset($p['diskon']) ? $p['diskon'] : 0;
+                            $harga_diskon = $p['harga_satuan'] - ($p['harga_satuan'] * $diskon / 100);
+                    ?>
+                            <a href="?aksi=tambah&id_produk=<?= $p['id_produk'] ?>" class="card-produk">
+                                <img src="<?= $path_gambar ?>" alt="<?= htmlspecialchars($p['nama_produk']) ?>">
+                                <h4><?= htmlspecialchars($p['nama_produk']) ?></h4>
+                                
+                                <?php if($diskon > 0): ?>
+                                    <div style="font-size: 11px; color: #d32f2f; font-weight: bold; margin-bottom: 2px;">
+                                        Diskon <?= $diskon ?>% OFF
+                                    </div>
+                                    <span style="text-decoration: line-through; color: #999; font-size: 11px;">
+                                        Rp <?= number_format($p['harga_satuan'], 0, ',', '.') ?>
+                                    </span>
+                                    <p style="margin: 0; color: #27ae60; font-weight: bold;">
+                                        Rp <?= number_format($harga_diskon, 0, ',', '.') ?>
+                                    </p>
+                                <?php else: ?>
+                                    <p style="margin: 0; font-weight: bold;">Rp <?= number_format($p['harga_satuan'], 0, ',', '.') ?></p>
+                                <?php endif; ?>
+                                <small>Stok: <?= $p['stok'] ?></small>
+                            </a>
+                    <?php 
+                        endwhile; 
+                    else: 
+                        echo "<div style='grid-column: 1/-1; text-align: center; padding: 40px; color: #999;'>Produk tidak ditemukan.</div>";
+                    endif; 
+                    ?>
+                </div>
+            </div>
 
             <div class="cart-panel">
                 <div class="cart-header">Item Terpilih</div>
@@ -162,24 +201,43 @@ if(isset($_POST['proses_bayar'])) {
                         </div>
                     <?php else: 
                         foreach($_SESSION['keranjang'] as $id => $item): 
-                        $sub = $item['harga'] * $item['qty'];
-                        $total += $sub;
+                            $diskon = isset($item['diskon']) ? $item['diskon'] : 0;
+                            $harga_final = $item['harga'] - ($item['harga'] * $diskon / 100);
+                            $sub = $harga_final * $item['qty'];
+                            $total += $sub;
                     ?>
-                        <div class="item">
+                        <div class="item" style="border-bottom: 1px solid #eee; padding: 10px 0; display: flex; justify-content: space-between; align-items: center;">
                             <div>
-                                <b><?= $item['nama'] ?></b>
-                                <div class="qty-btns">
+                                <b><?= htmlspecialchars($item['nama']) ?></b>
+                                
+                                <?php if($diskon > 0): ?>
+                                    <span style="font-size: 10px; background: #e8f5e9; color: #2e7d32; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 5px;">
+                                        Diskon <?= $diskon ?>%
+                                    </span>
+                                <?php endif; ?>
+                                
+                                <div class="qty-btns" style="margin-top: 5px;">
                                     <a href="?aksi=kurang&id_produk=<?= $id ?>" class="btn-small"><i class="fa-solid fa-minus"></i></a>
-                                    <span><?= $item['qty'] ?></span>
+                                    <span style="margin: 0 10px;"><?= $item['qty'] ?></span>
                                     <a href="?aksi=tambah&id_produk=<?= $id ?>" class="btn-small"><i class="fa-solid fa-plus"></i></a>
                                 </div>
                             </div>
+                            
                             <div style="text-align: right;">
-                                <b>Rp <?= number_format($sub, 0, ',', '.') ?></b><br>
-                                <a href="?aksi=hapus&id_produk=<?= $id ?>" style="color: #ef4444; font-size: 11px;"><i class="fa-solid fa-trash"></i> Hapus</a>
+                                <?php if($diskon > 0): ?>
+                                    <small style="text-decoration: line-through; color: #999; font-size: 11px;">
+                                        Rp <?= number_format($item['harga'], 0, ',', '.') ?>
+                                    </small><br>
+                                    <b style="color: #27ae60;">Rp <?= number_format($harga_final, 0, ',', '.') ?></b>
+                                <?php else: ?>
+                                    <b>Rp <?= number_format($item['harga'], 0, ',', '.') ?></b>
+                                <?php endif; ?>
+                                <br>
+                                <a href="?aksi=hapus&id_produk=<?= $id ?>" style="color: #ef4444; font-size: 11px; text-decoration: none;"><i class="fa-solid fa-trash"></i> Hapus</a>
                             </div>
                         </div>
-                    <?php endforeach; endif; ?>
+                    <?php endforeach; 
+                    endif; ?>
                 </div>
 
                 <div class="cart-footer">
@@ -189,7 +247,7 @@ if(isset($_POST['proses_bayar'])) {
                     </div>
                     <form method="POST">
                         <input type="hidden" name="total_bayar" value="<?= $total ?>">
-                        <button type="submit" name="proses_bayar" class="btn-bayar" <?= ($total == 0) ? 'disabled' : '' ?>>
+                        <button type="submit" name="proses_bayar" class="btn-bayar" <?= ($total == 0) ? 'disabled' : '' ?> onclick="return confirm('Proses pembayaran sekarang?')">
                             Selesaikan Pembayaran
                         </button>
                     </form>

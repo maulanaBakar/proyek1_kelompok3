@@ -203,6 +203,37 @@ td {
   margin-top: 10px;
 }
 
+/* Tambahkan di stok.css */
+.badge-stok {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Badge Diskon */
+.badge-diskon {
+  background: #fee2e2; /* Merah muda lembut */
+  color: #dc2626; /* Merah tua */
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.stok-habis {
+  background: #fee2e2;
+  color: #dc2626;
+} /* Merah */
+.stok-kritis {
+  background: #fef3c7;
+  color: #d97706;
+} /* Oranye */
+.stok-aman {
+  background: #dcfce7;
+  color: #16a34a;
+} /* Hijau */
+
 /* --- Responsif --- */
 @media (max-width: 768px) {
   .header-halaman {
