@@ -1,6 +1,6 @@
-/* --- ROOT VARIABLES --- */
+/* --- VARIABLE & RESET --- */
 :root {
-  --sidebar-bg: #4a3e3d;
+  --sidebar-bg: #4a3e3d; /* Cokelat Tua */
   --sidebar-hover: rgba(255, 255, 255, 0.08);
   --accent-color: #d6c4b0;
   --accent-hover: #c4b19c;
