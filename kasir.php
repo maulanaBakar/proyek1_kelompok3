@@ -13,22 +13,25 @@ if(!isset($_SESSION['keranjang'])) {
     $_SESSION['keranjang'] = [];
 }
 
-// 1. Logika Tambah Produk ke Keranjang
+// 1. TAMBAH PRODUK (default qty = 1)
 if(isset($_GET['aksi']) && $_GET['aksi'] == "tambah") {
+
     $id = $_GET['id_produk'];
+    $qty = 1;
+
     $data = mysqli_query($koneksi, "SELECT * FROM produk WHERE id_produk='$id'");
     $p = mysqli_fetch_assoc($data);
 
     if($p) {
         if(isset($_SESSION['keranjang'][$id])) {
-            // Cek apakah stok masih mencukupi sebelum menambah qty di keranjang
-            if ($_SESSION['keranjang'][$id]['qty'] < $p['stok']) {
+
+            if ($_SESSION['keranjang'][$id]['qty'] + 1 <= $p['stok']) {
                 $_SESSION['keranjang'][$id]['qty'] += 1;
             } else {
                 echo "<script>alert('Stok tidak mencukupi!');</script>";
             }
+
         } else {
-            // Tambah baru dengan diskon
             $_SESSION['keranjang'][$id] = [
                 'nama'   => $p['nama_produk'],
                 'harga'  => $p['harga_satuan'],
@@ -37,24 +40,53 @@ if(isset($_GET['aksi']) && $_GET['aksi'] == "tambah") {
             ];
         }
     }
+
     header("location:kasir.php"); 
     exit();
 }
 
-// 2. Logika Kurangi Qty
-if(isset($_GET['aksi']) && $_GET['aksi'] == "kurang") {
-    $id = $_GET['id_produk'];
-    if(isset($_SESSION['keranjang'][$id])) {
-        $_SESSION['keranjang'][$id]['qty'] -= 1;
-        if($_SESSION['keranjang'][$id]['qty'] <= 0) {
-            unset($_SESSION['keranjang'][$id]);
+// 2. UPDATE QTY DARI CART
+if(isset($_POST['update_qty'])) {
+    $id = $_POST['id_produk'];
+    $qty = (int)$_POST['qty'];
+
+    if($qty < 1) $qty = 1;
+
+    $data = mysqli_query($koneksi, "SELECT stok FROM produk WHERE id_produk='$id'");
+    $p = mysqli_fetch_assoc($data);
+
+    if($qty > $p['stok']) {
+
+        echo "<script>
+                alert('Qty melebihi stok! Maksimal: ".$p['stok']."');
+                window.location='kasir.php';
+              </script>";
+        exit();
+
+    } else {
+
+        if(isset($_SESSION['keranjang'][$id])) {
+            $qty_lama = $_SESSION['keranjang'][$id]['qty'];
+
+            if($qty < $qty_lama) {
+                echo "<script>
+                        alert('Qty berhasil dikurangi');
+                        window.location='kasir.php';
+                      </script>";
+                $_SESSION['keranjang'][$id]['qty'] = $qty;
+                exit();
+            }
         }
+
+        $_SESSION['keranjang'][$id]['qty'] = $qty;
+
+        header("location:kasir.php");
+        exit();
     }
-    header("location:kasir.php");
-    exit();
 }
 
-// 3. Logika Hapus Item
+
+// 3. HAPUS ITEM
 if(isset($_GET['aksi']) && $_GET['aksi'] == "hapus") {
     $id = $_GET['id_produk'];
     unset($_SESSION['keranjang'][$id]);
@@ -62,41 +94,32 @@ if(isset($_GET['aksi']) && $_GET['aksi'] == "hapus") {
     exit();
 }
 
-// 4. Logika Proses Pembayaran (Simpan ke DB)
+// 4. PEMBAYARAN
 if(isset($_POST['proses_bayar'])) {
     if(!empty($_SESSION['keranjang'])) {
         $total_bayar = $_POST['total_bayar'];
         $tgl = date("Y-m-d H:i:s");
 
-        $query_transaksi = "INSERT INTO transaksi (tanggal_transaksi, total_pendapatan) VALUES ('$tgl', '$total_bayar')";
-        $simpan_transaksi = mysqli_query($koneksi, $query_transaksi);
+        mysqli_query($koneksi, "INSERT INTO transaksi (tanggal_transaksi, total_pendapatan) VALUES ('$tgl', '$total_bayar')");
         $id_transaksi = mysqli_insert_id($koneksi);
 
-        if($simpan_transaksi) {
-            foreach($_SESSION['keranjang'] as $id_produk => $item) {
-                $qty = $item['qty'];
-                // Hitung subtotal dengan diskon
-                $diskon = isset($item['diskon']) ? $item['diskon'] : 0;
-                $harga_setelah_diskon = $item['harga'] - ($item['harga'] * $diskon / 100);
-                $subtotal = $harga_setelah_diskon * $qty;
+        foreach($_SESSION['keranjang'] as $id_produk => $item) {
+            $qty = $item['qty'];
+            $diskon = $item['diskon'] ?? 0;
+            $harga_final = $item['harga'] - ($item['harga'] * $diskon / 100);
+            $subtotal = $harga_final * $qty;
 
-                // Update Stok di DB
-                mysqli_query($koneksi, "UPDATE produk SET stok = stok - $qty WHERE id_produk = '$id_produk'");
-                
-                mysqli_query($koneksi, "INSERT INTO detail_transaksi (id_transaksi, id_produk, jumlah_produk, subtotal) 
-                                        VALUES ('$id_transaksi', '$id_produk', '$qty', '$subtotal')");
-            }       
-            
-            unset($_SESSION['keranjang']);
-            echo "<script> 
-                    alert('PEMBAYARAN BERHASIL! Stok telah diperbarui.');
-                    window.location='kasir.php';
-                  </script>";
-        }   
+            mysqli_query($koneksi, "UPDATE produk SET stok = stok - $qty WHERE id_produk = '$id_produk'");
+            mysqli_query($koneksi, "INSERT INTO detail_transaksi (id_transaksi, id_produk, jumlah_produk, subtotal) 
+                                   VALUES ('$id_transaksi', '$id_produk', '$qty', '$subtotal')");
+        }
+
+        unset($_SESSION['keranjang']);
+        echo "<script>alert('Pembayaran berhasil'); window.location='kasir.php';</script>";
     }
 }
 
-// 5. Logika Pencarian Produk
+// SEARCH
 $cari = isset($_GET['cari']) ? mysqli_real_escape_string($koneksi, $_GET['cari']) : '';
 ?>
 
@@ -190,10 +213,10 @@ $cari = isset($_GET['cari']) ? mysqli_real_escape_string($koneksi, $_GET['cari']
                             $path_gambar = (!empty($p['gambar_produk'])) ? 'uploads/' . $p['gambar_produk'] : 'uploads/no-image.png';
                     ?>
                     <a href="?aksi=tambah&id_produk=<?= $p['id_produk'] ?>" class="card-produk">
-                        <img src="<?= $path_gambar ?>" alt="<?= htmlspecialchars($p['nama_produk']) ?>">
-                        <h4><?= htmlspecialchars($p['nama_produk']) ?></h4>
-                        <p>Rp <?= number_format($p['harga_satuan'], 0, ',', '.') ?></p>
-                        <small>Stok: <?= $p['stok'] ?></small>
+                    <img src="<?= $path_gambar ?>" alt="<?= htmlspecialchars($p['nama_produk']) ?>">
+                    <h4><?= htmlspecialchars($p['nama_produk']) ?></h4>
+                    <p>Rp <?= number_format($p['harga_satuan'], 0, ',', '.') ?></p>
+                    <small>Stok: <?= $p['stok'] ?></small>
                     </a>
                     <?php 
                         endwhile; 
@@ -227,11 +250,21 @@ $cari = isset($_GET['cari']) ? mysqli_real_escape_string($koneksi, $_GET['cari']
                         <div class="item" style="border-bottom: 1px solid #eee; padding: 10px 0; display: flex; justify-content: space-between; align-items: center;">
                             <div>
                                 <b><?= htmlspecialchars($item['nama']) ?></b>
-                                <div class="qty-btns">
-                                    <a href="?aksi=kurang&id_produk=<?= $id ?>" class="btn-small"><i class="fa-solid fa-minus"></i></a>
-                                    <span style="margin: 0 10px;"><?= $item['qty'] ?></span>
-                                    <a href="?aksi=tambah&id_produk=<?= $id ?>" class="btn-small"><i class="fa-solid fa-plus"></i></a>
-                                </div>
+                                <form method="POST" style="display:flex; align-items:center; gap:5px; margin-top:5px;">
+                                <input type="hidden" name="id_produk" value="<?= $id ?>">
+                                <button type="button" onclick="
+                                if(confirm('Yakin ingin mengurangi qty produk ini?')) {
+                                this.nextElementSibling.stepDown();
+                                this.form.submit();
+                                } else {
+                                return false;
+                                }">-</button>
+                                <input type="number" name="qty" value="<?= $item['qty'] ?>" min="1"
+                                style="width:60px; text-align:center;"
+                                onchange="this.form.submit()">
+                                <button type="button" onclick="this.previousElementSibling.stepUp(); this.form.submit();">+</button>
+                                <input type="hidden" name="update_qty" value="1">
+                                </form>
                             </div>
                             
                             <div style="text-align: right;">
