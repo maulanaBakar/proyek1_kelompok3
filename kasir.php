@@ -83,7 +83,6 @@ if(isset($_POST['proses_bayar'])) {
                 // Update Stok di DB
                 mysqli_query($koneksi, "UPDATE produk SET stok = stok - $qty WHERE id_produk = '$id_produk'");
                 
-                // Simpan Detail Transaksi
                 mysqli_query($koneksi, "INSERT INTO detail_transaksi (id_transaksi, id_produk, jumlah_produk, subtotal) 
                                         VALUES ('$id_transaksi', '$id_produk', '$qty', '$subtotal')");
             }       
