@@ -87,9 +87,9 @@ if ($view == 'bulan') {
           <a href="laporan.php" class="link-menu aktif">
             <i class="fa-solid fa-file-lines"></i> Laporan
           </a>
-          <a href="pengaturan.php" class="link-menu">
+          <!-- <a href="pengaturan.php" class="link-menu">
            <i class="fa-solid fa-gear"></i> <span>Pengaturan</span>
-          </a>
+          </a> -->
 
         </nav>
       </div>

@@ -34,7 +34,7 @@ require_once 'koneksi.php';
                 <a href="kasir.php" class="link-menu"><i class="fa-solid fa-cash-register"></i> Kasir</a>
                 <a href="stok.php" class="link-menu aktif"><i class="fa-solid fa-box"></i> Stok Barang</a>
                 <a href="laporan.php" class="link-menu"><i class="fa-solid fa-file-lines"></i> Laporan</a>
-                <a href="pengaturan.php" class="link-menu"><i class="fa-solid fa-gear"></i> <span>Pengaturan</span></a>
+                <!-- <a href="pengaturan.php" class="link-menu"><i class="fa-solid fa-gear"></i> <span>Pengaturan</span></a> -->
             </nav>
         </div>
         <div class="bagian-bawah">
@@ -70,11 +70,11 @@ require_once 'koneksi.php';
                 <tbody>
                     <?php
                     $cari = isset($_GET['cari']) ? mysqli_real_escape_string($koneksi, $_GET['cari']) : '';
-                    $sql = "SELECT * FROM produk";
+                    $sql = "SELECT * FROM produk ORDER BY stok ASC";
                     if ($cari != "") {
                         $sql .= " WHERE nama_produk LIKE '%$cari%' OR kategori LIKE '%$cari%'";
                     }
-                    $sql .= " ORDER BY stok ASC"; 
+                    // $sql .= " ORDER BY stok ASC"; 
 
                     $res = mysqli_query($koneksi, $sql);
                     while ($row = mysqli_fetch_assoc($res)):

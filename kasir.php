@@ -175,7 +175,7 @@ $cari = isset($_GET['cari']) ? mysqli_real_escape_string($koneksi, $_GET['cari']
           <a href="stok.php" class="link-menu"><i class="fa-solid fa-box"></i> Stok Barang</a>
           <a href="laporan.php" class="link-menu"><i class="fa-solid fa-file-lines"></i> Laporan</a>
           <a href="pengaturan.php" class="link-menu">
-           <i class="fa-solid fa-gear"></i> <span>Pengaturan</span>
+           <!-- <i class="fa-solid fa-gear"></i> <span>Pengaturan</span> -->
           </a>
         </nav>
       </div>
