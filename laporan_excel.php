@@ -61,104 +61,39 @@ if ($view == 'bulan') {
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
  
 <style>
-/* Styling Form Download Spesifik */
-
-/* Container Utama Download */
-
+/* Tombol Download */
 .download-group {
-    margin: 10px 0;
+    margin: 6px 0 10px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 }
-
 .download-label {
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .6px;
-    color: #000000;
-    margin-bottom: 4px;
+    color: #8a9bb5;
+    margin: 0 0 2px;
+    padding-left: 2px;
 }
-
-/* Box Filter Tanggal */
-.download-filter-box {
-    background: #4a3e3d;
-    padding: 15px;
-    border-radius: 12px;
-    border: 1px solid #f3f4f5;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-}
-
-.input-row {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 12px;
-}
-
-.input-field {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.input-field label {
-    font-size: 11px;
-    font-weight: 700;
-    color: #ffffff;
-}
-
-.input-field input {
-    padding: 10px;
-    border: 1.5px solid #dde3f0;
-    border-radius: 8px;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 13px;
-    color: #1a1a2e;
-    outline: none;
-    transition: border-color 0.2s;
-}
-
-.input-field input:focus {
-    border-color: #1a73e8;
-}
-
-/* Tombol Download */
-.btn-download-wrapper {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-}
-
 .btn-dl {
     display: flex;
     align-items: center;
-    justify-content: center;
     gap: 8px;
-    padding: 12px;
+    padding: 9px 14px;
     border-radius: 8px;
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 600;
     text-decoration: none;
-    transition: all 0.2s;
-    color: #fff !important; /* Paksa warna teks putih */
+    transition: opacity .15s, transform .1s;
 }
-
-.btn-dl:hover {
-    filter: brightness(1.1);
-    transform: translateY(-1px);
-}
-
-.btn-dl-pdf { background: #bc987e; } /* PDF */
-.btn-dl-xls { background: #bc987e; } /* Excel */
-
-.btn-dl i {
-    font-size: 14px;
-}
-
+.btn-dl:hover         { opacity: .88; transform: translateX(2px); }
+.btn-dl-pdf           { background: #e53935; color: #fff; }
+.btn-dl-xls           { background: #1e7e34; color: #fff; }
 </style>
 </head>
+<body>
  
 <!-- MOBILE HEADER -->
 <div class="bar-atas-mobile">
@@ -197,61 +132,43 @@ if ($view == 'bulan') {
         </a>
     </div>
 </aside>
-
+ 
+ 
+ 
 <!-- CONTENT -->
 <main class="content">
     <div class="header">
         <h1>Laporan Keuangan</h1>
     </div>
-
+ 
     <div class="stats-container">
         <a href="?view=hari" class="card-stat <?= $view=='hari' ? 'active' : '' ?>">
             <p>Per Hari</p>
             <h3>Rp <?= number_format($total_hari,0,',','.') ?></h3>
         </a>
-
+ 
         <a href="?view=bulan" class="card-stat <?= $view=='bulan' ? 'active' : '' ?>">
             <p>Per Bulan</p>
             <h3>Rp <?= number_format($total_bulan,0,',','.') ?></h3>
         </a>
-
+ 
         <a href="?view=tahun" class="card-stat <?= $view=='tahun' ? 'active' : '' ?>">
             <p>Per Tahun</p>
             <h3>Rp <?= number_format($total_tahun,0,',','.') ?></h3>
         </a>
+
         <!-- TOMBOL DOWNLOAD -->
             <div class="download-group">
-    <p class="download-label">Download Khusus Periode</p>
-    
-    <div class="download-filter-box">
-        <div class="input-row">
-            <div class="input-field">
-                <label>Mulai</label>
-                <input type="date" id="tgl_mulai" value="<?= date('Y-m-d') ?>">
+                <p class="download-label">Download Laporan</p>
+                <a href="laporan_pdf.php?view=<?= $view ?>" target="_blank" class="btn-dl btn-dl-pdf">
+                    <i class="fa-solid fa-file-pdf"></i> PDF
+                </a>
+                <a href="laporan_excel.php?view=<?= $view ?>" class="btn-dl btn-dl-xls">
+                    <i class="fa-solid fa-file-excel"></i> Excel
+                </a>
             </div>
-            <div class="input-field">
-                <label>Sampai</label>
-                <input type="date" id="tgl_selesai" value="<?= date('Y-m-d') ?>">
-            </div>
-        </div>
-
-        <div class="btn-download-wrapper">
-            <a href="#" onclick="generateDownload('pdf')" class="btn-dl btn-dl-pdf" id="link-pdf">
-                <i class="fa-solid fa-file-pdf"></i> PDF
-            </a>
-            <a href="#" onclick="generateDownload('excel')" class="btn-dl btn-dl-xls" id="link-excel">
-                <i class="fa-solid fa-file-excel"></i> Excel
-            </a>
-        </div>
     </div>
-    
-    <p class="download-label" style="margin-top:10px;">Cepat (Sesuai View)</p>
-    <a href="laporan_pdf.php?view=<?= $view ?>" target="_blank" style="font-size:11px; color:#1a73e8; text-decoration:none; font-weight:700;">
-        <i class="fa-solid fa-print"></i> Download <?= ucfirst($view) ?> Ini
-    </a>
-</div>
-    </div>
-
+ 
     <div class="report-card">
         <div class="table-header">
             <h3><?= $title ?></h3>
@@ -338,46 +255,39 @@ if ($view == 'bulan') {
         <div id="modal-body">Memuat data...</div>
     </div>
 </div>
-
+ 
 <script>
-
-function toggleDownload(event) {
-    event.stopPropagation(); // Mencegah event klik tembus ke window
-    document.getElementById("myDropdown").classList.toggle("show");
-}
-
-window.onclick = function(event) {
-    var dropdown = document.getElementById("myDropdown");
-    // Jika user klik di luar tombol dan dropdown sedang terbuka, maka tutup
-    if (!event.target.matches('.btn-main-dl') && !event.target.closest('.btn-main-dl')) {
-        if (dropdown.classList.contains('show')) {
-            dropdown.classList.remove('show');
-        }
-    }
-}
-
-function generateDownload(type) {
-    const start = document.getElementById('tgl_mulai').value;
-    const end = document.getElementById('tgl_selesai').value;
+function showDetail(id) {
+    var modal = document.getElementById("myModal");
+    var modalBody = document.getElementById("modal-body");
     
-    if (!start || !end) {
-        alert("Silakan pilih tanggal terlebih dahulu");
-        return;
-    }
-
-    let url = "";
-    if (type === 'pdf') {
-        url = `laporan_pdf.php?view=custom&start_date=${start}&end_date=${end}`;
-        window.open(url, '_blank'); // Buka PDF di tab baru
-    } else {
-        url = `laporan_excel.php?view=custom&start_date=${start}&end_date=${end}`;
-        window.location.href = url; // Download Excel langsung
+    modal.style.display = "block";
+    modalBody.innerHTML = "Memuat data...";
+ 
+    fetch('get_detail.php?id=' + id)
+        .then(response => response.text())
+        .then(data => {
+            modalBody.innerHTML = data;
+        })
+        .catch(error => {
+            modalBody.innerHTML = "Gagal memuat data.";
+        });
+}
+ 
+var modal = document.getElementById("myModal");
+var span = document.getElementsByClassName("close")[0];
+ 
+span.onclick = function() {
+    modal.style.display = "none";
+}
+ 
+window.onclick = function(event) {
+    if (event.target == modal) {
+        modal.style.display = "none";
     }
 }
-
 </script>
-
+ 
 <script src="laporan.js"></script>
 </body>
 </html>
- 

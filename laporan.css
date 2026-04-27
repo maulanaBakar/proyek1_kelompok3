@@ -14,20 +14,26 @@
 /* STATS */
 .stats-container {
   display: flex;
-  gap: 20px;
+  gap: 15px;
   margin-bottom: 35px;
 }
 
 .card-stat {
   flex: 1;
-  padding: 22px;
-  border-radius: 16px;
+  max-width: 250px; /* Tambahkan ini untuk membatasi lebar kotak */
+  padding: 14px 18px;  /* Kurangi padding (Atas-Bawah 14px, Kiri-Kanan 18px) */
+  border-radius: 12px; /* Sesuaikan radius agar proporsional dengan ukuran kecil */
   background: #ffffff;
   text-decoration: none;
   color: #3e3636;
   border: 1px solid #f2ebe1;
   transition: all 0.3s ease;
   box-shadow: 0 1px 3px rgba(74, 62, 61, 0.05);
+  text-align: center; 
+  display: flex;
+  flex-direction: column;
+  align-items: center; 
+  justify-content: center;
 }
 
 .card-stat:hover {
@@ -42,12 +48,12 @@
 }
 
 .card-stat p {
-  font-size: 11px;
+  font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-weight: 700;
   color: #8c7a78;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .card-stat.active p {
@@ -55,7 +61,7 @@
 }
 
 .card-stat h3 {
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 800;
 }
 
