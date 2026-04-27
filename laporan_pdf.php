@@ -102,26 +102,26 @@ $res = mysqli_query($koneksi, $sql);
     align-items: center;
     gap: 6px;
   }
-  .btn-print { background: #1a73e8; color: #fff; }
-  .btn-back  { background: #f0f0f0; color: #333; }
+  .btn-print { background: #4a4a4a; color: #fff; }
+  .btn-back  { background: #4a4a4a; color: #ffffff; }
 
   /* Header */
   .doc-header {
     text-align: center;
-    border-bottom: 3px solid #1a73e8;
+    border-bottom: 3px solid #4a4a4a;
     padding-bottom: 14px;
     margin-bottom: 18px;
   }
-  .doc-header .brand    { font-size: 22px; font-weight: 800; color: #1a73e8; letter-spacing: 2px; }
+  .doc-header .brand    { font-size: 22px; font-weight: 800; color: #4a4a4a; letter-spacing: 2px; }
   .doc-header .subtitle { font-size: 14px; font-weight: 700; color: #333; margin-top: 4px; }
   .doc-header .meta     { font-size: 10px; color: #888; margin-top: 3px; }
 
   /* Statistik */
   .stats-row { display: flex; gap: 12px; margin-bottom: 18px; }
   .stat-box  { flex: 1; border: 1.5px solid #dde3f0; border-radius: 8px; padding: 10px 14px; }
-  .stat-box.active { border-color: #1a73e8; background: #f0f6ff; }
+  .stat-box.active { border-color: #4a4a4a; background: #f0f6ff; }
   .stat-box .lbl { font-size: 9px; color: #666; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
-  .stat-box .val { font-size: 13px; font-weight: 800; color: #1a73e8; margin-top: 3px; }
+  .stat-box .val { font-size: 13px; font-weight: 800; color: #4a4a4a; margin-top: 3px; }
 
   /* Judul seksi */
   .section-head {
@@ -130,7 +130,7 @@ $res = mysqli_query($koneksi, $sql);
   }
   .section-head h3 { font-size: 13px; color: #1a1a2e; }
   .total-tag {
-    background: #1a73e8; color: #fff;
+    background: #4a4a4a; color: #fff;
     font-size: 11px; font-weight: 700;
     padding: 4px 12px; border-radius: 20px;
   }
@@ -138,18 +138,18 @@ $res = mysqli_query($koneksi, $sql);
   /* Tabel */
   table { width: 100%; border-collapse: collapse; font-size: 11px; }
   thead th {
-    background: #1a73e8; color: #fff;
+    background: #4a4a4a; color: #fff;
     padding: 8px 10px; text-align: left;
     font-size: 10px; text-transform: uppercase; letter-spacing: .4px;
   }
   thead th.r { text-align: right; }
   tbody td   { padding: 7px 10px; border-bottom: 1px solid #eef0f7; }
   tbody td.r { text-align: right; font-weight: 700; }
-  tbody td.ok{ color: #1e8c3a; font-weight: 700; }
+  tbody td.ok{ color: #4a4a4a; font-weight: 700; }
   tbody tr:nth-child(even) td { background: #f8f9ff; }
   tfoot td {
-    padding: 8px 10px; background: #1a73e8; color: #fff;
-    font-weight: 800; border-top: 2px solid #1558b0;
+    padding: 8px 10px; background: #4a4a4a; color: #fff;
+    font-weight: 800; border-top: 2px solid #4a4a4a;
   }
   tfoot td.r { text-align: right; }
 

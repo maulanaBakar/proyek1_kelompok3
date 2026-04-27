@@ -21,7 +21,7 @@
 .card-stat {
   flex: 1;
   max-width: 250px; /* Tambahkan ini untuk membatasi lebar kotak */
-  padding: 14px 18px;  /* Kurangi padding (Atas-Bawah 14px, Kiri-Kanan 18px) */
+  padding: 7x;  /* Kurangi padding (Atas-Bawah 14px, Kiri-Kanan 18px) */
   border-radius: 12px; /* Sesuaikan radius agar proporsional dengan ukuran kecil */
   background: #ffffff;
   text-decoration: none;

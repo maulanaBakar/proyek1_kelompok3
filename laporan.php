@@ -121,7 +121,7 @@ if ($view == 'bulan') {
 }
 
 .input-field input:focus {
-    border-color: #1a73e8;
+    border-color: #4a4a4a;
 }
 
 /* Tombol Download */
