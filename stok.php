@@ -47,11 +47,23 @@ if (isset($_POST['lapor_rusak'])) {
     $jumlah_rusak = (int)$_POST['jumlah_rusak'];
     $keterangan   = mysqli_real_escape_string($koneksi, $_POST['keterangan_rusak']);
     $stok_awal    = (int)$_POST['stok_awal'];
+    $tanggal_rusak = date('Y-m-d'); // Ambil tanggal hari ini
     
     if ($jumlah_rusak > $stok_awal) {
         echo "<script>alert('Gagal: Jumlah rusak melebihi stok yang ada!'); window.history.back();</script>";
         exit;
     } else {
+        // Ambil data HPP / Modal terkini dari produk tersebut
+        $cek_harga = mysqli_query($koneksi, "SELECT jenis_produk, modal, hpp FROM produk WHERE id_produk = '$id_produk'");
+        $data_harga = mysqli_fetch_assoc($cek_harga);
+        
+        // Tentukan harga yang dipakai sebagai patokan kerugian
+        $harga_satuan = ($data_harga['jenis_produk'] == 'Luar') ? $data_harga['modal'] : $data_harga['hpp'];
+        
+        // Hitung total nilai kerugian
+        $nilai_kerugian = $jumlah_rusak * $harga_satuan;
+
+        // Kurangi stok di tabel produk
         $query_rusak = "UPDATE produk SET 
                         stok = stok - $jumlah_rusak, 
                         stok_rusak = stok_rusak + $jumlah_rusak,
@@ -59,7 +71,11 @@ if (isset($_POST['lapor_rusak'])) {
                         WHERE id_produk = '$id_produk'";
                         
         if (mysqli_query($koneksi, $query_rusak)) {
-            echo "<script>alert('Laporan barang rusak berhasil dicatat! Stok telah dikurangi.'); window.location='stok.php';</script>";
+            // Masukkan histori ke tabel riwayat_kerugian
+            mysqli_query($koneksi, "INSERT INTO riwayat_kerugian (id_produk, jumlah_rusak, nilai_kerugian, tanggal, keterangan) 
+                                    VALUES ('$id_produk', '$jumlah_rusak', '$nilai_kerugian', '$tanggal_rusak', '$keterangan')");
+                                    
+            echo "<script>alert('Laporan barang rusak berhasil dicatat! Stok dikurangi & Kerugian dihitung.'); window.location='stok.php';</script>";
             exit;
         } else {
             echo "<script>alert('Gagal memproses database: " . mysqli_error($koneksi) . "'); window.history.back();</script>";
