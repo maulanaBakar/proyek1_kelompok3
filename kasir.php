@@ -32,6 +32,8 @@ if(isset($_GET['aksi']) && $_GET['aksi'] == "tambah") {
                 'harga'  => $p['harga_satuan'],
                 'qty'    => 1,
                 'diskon' => $p['diskon'] 
+               
+                
             ];
         }
     }
@@ -84,13 +86,24 @@ if(isset($_POST['proses_bayar'])) {
             $harga_final = $item['harga'] - ($item['harga'] * $diskon / 100);
             $subtotal = $harga_final * $qty;
 
+            $cek_p = mysqli_query($koneksi, "SELECT jenis_produk, modal, hpp FROM produk WHERE id_produk = '$id_produk'");
+            $data_p = mysqli_fetch_assoc($cek_p);
+            
+            $modal_terkini = 0;
+            if ($data_p['jenis_produk'] == 'Luar') {
+                $modal_terkini = $data_p['modal'];
+            } else {
+                $modal_terkini = $data_p['hpp'];
+            }
+
+            mysqli_query($koneksi, "INSERT INTO detail_transaksi (id_transaksi, id_produk, jumlah_produk, subtotal, modal_satuan) 
+                                   VALUES ('$id_transaksi', '$id_produk', '$qty', '$subtotal', '$modal_terkini')");
+
             mysqli_query($koneksi, "UPDATE produk SET stok = stok - $qty WHERE id_produk = '$id_produk'");
-            mysqli_query($koneksi, "INSERT INTO detail_transaksi (id_transaksi, id_produk, jumlah_produk, subtotal) 
-                                   VALUES ('$id_transaksi', '$id_produk', '$qty', '$subtotal')");
         }
 
         unset($_SESSION['keranjang']);
-        echo "<script>alert('Pembayaran berhasil'); window.location='kasir.php';</script>";
+        echo "<script>alert('Pembayaran berhasil!'); window.location='kasir.php';</script>";
     }
 }
 
