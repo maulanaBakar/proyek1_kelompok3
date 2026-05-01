@@ -37,4 +37,4 @@ if(isset($_GET['id'])) {
         echo "<p style='text-align:center;'>Data tidak ditemukan.</p>";
     }
 }
-?>
+?>              

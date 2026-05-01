@@ -11,9 +11,20 @@ if (isset($_POST['save'])) {
     $jenis_produk  = mysqli_real_escape_string($koneksi, $_POST['jenis_produk']);
     $modal_beli    = (int)($_POST['modal'] ?? 0);
     $biaya_prod    = (int)($_POST['biaya_produksi'] ?? 0);
-    $hpp           = (int)($_POST['hpp'] ?? 0);
+    $hpp           = 0;
 
-    if ($jenis_produk === 'Luar') { $biaya_prod = 0; $hpp = 0; } else { $modal_beli = 0; }
+    // Perhitungan Otomatis: HPP untuk Produksi, Modal untuk Luar
+    if ($jenis_produk === 'Luar') { 
+        $biaya_prod = 0; 
+        $hpp = 0; 
+        // modal_beli tetap sesuai inputan
+    } else { 
+        $modal_beli = 0; 
+        // Hitung HPP Otomatis = Total Biaya Produksi / Stok
+        if ($stok > 0) {
+            $hpp = ceil($biaya_prod / $stok); 
+        }
+    }
 
     if (empty($id_produk)) {
         $query = "INSERT INTO produk (nama_produk, harga_satuan, stok, batas_minimal, jenis_produk, modal, biaya_produksi, hpp) 
@@ -25,6 +36,8 @@ if (isset($_POST['save'])) {
     if (mysqli_query($koneksi, $query)) { 
         echo "<script>alert('Data tersimpan!'); window.location='stok.php';</script>"; 
         exit;
+    } else {
+        echo "<script>alert('Gagal menyimpan data: " . mysqli_error($koneksi) . "');</script>";
     }
 }
 
@@ -33,8 +46,7 @@ if (isset($_POST['lapor_rusak'])) {
     $id_produk    = mysqli_real_escape_string($koneksi, $_POST['id_produk_rusak']);
     $jumlah_rusak = (int)$_POST['jumlah_rusak'];
     $keterangan   = mysqli_real_escape_string($koneksi, $_POST['keterangan_rusak']);
-    
-    $stok_awal = (int)$_POST['stok_awal'];
+    $stok_awal    = (int)$_POST['stok_awal'];
     
     if ($jumlah_rusak > $stok_awal) {
         echo "<script>alert('Gagal: Jumlah rusak melebihi stok yang ada!'); window.history.back();</script>";
@@ -64,15 +76,38 @@ if (isset($_GET['hapus'])) {
     exit;
 }
 
-// --- PROSES TAMBAH STOK CEPAT ---
+// --- PROSES TAMBAH STOK CEPAT (MOVING AVERAGE UNTUK HPP DAN MODAL) ---
 if (isset($_POST['proses_tambah_cepat'])) {
     $id = mysqli_real_escape_string($koneksi, $_POST['id_produk_cepat']);
     $jumlah_tambah = (int)$_POST['jumlah_tambah'];
+    $biaya_batch_baru = (int)$_POST['biaya_batch_baru']; // Total tagihan kulakan ATAU total biaya produksi
 
-    $sql = "UPDATE produk SET stok = stok + $jumlah_tambah WHERE id_produk = '$id'";
+    // Ambil data produk saat ini
+    $cek = mysqli_query($koneksi, "SELECT stok, jenis_produk, modal, hpp FROM produk WHERE id_produk = '$id'");
+    $data = mysqli_fetch_assoc($cek);
+
+    $stok_lama = (int)$data['stok'];
+    $jenis = $data['jenis_produk'];
+    $stok_baru_total = $stok_lama + $jumlah_tambah;
+
+    if ($jenis == 'Produksi') {
+        $hpp_lama = (int)$data['hpp'];
+        // Rumus Moving Average untuk HPP (Produksi Sendiri)
+        $total_nilai_lama = $stok_lama * $hpp_lama;
+        $hpp_baru = ceil(($total_nilai_lama + $biaya_batch_baru) / $stok_baru_total);
+        
+        $sql = "UPDATE produk SET stok = $stok_baru_total, hpp = $hpp_baru WHERE id_produk = '$id'";
+    } else { 
+        $modal_lama = (int)$data['modal'];
+        // Rumus Moving Average untuk Modal (Produk Luar)
+        $total_nilai_lama = $stok_lama * $modal_lama;
+        $modal_baru = ceil(($total_nilai_lama + $biaya_batch_baru) / $stok_baru_total);
+        
+        $sql = "UPDATE produk SET stok = $stok_baru_total, modal = $modal_baru WHERE id_produk = '$id'";
+    }
     
     if (mysqli_query($koneksi, $sql)) {
-        echo "<script>alert('Stok berhasil ditambahkan!'); window.location='stok.php';</script>";
+        echo "<script>alert('Stok dan Harga Modal/HPP berhasil diperbarui!'); window.location='stok.php';</script>";
         exit;
     } else {
         echo "<script>alert('Gagal menambah stok!');</script>";
@@ -223,12 +258,16 @@ if (isset($_POST['proses_tambah_cepat'])) {
                             <?= $rusak > 0 ? $rusak : '-' ?>
                         </td>
                         <td style="text-align: center; display: flex; gap: 12px; justify-content: center; align-items: center;">
+                             <i class="fa-solid fa-cart-plus" title="Tambah Stok Masuk" style="color: #27ae60; cursor:pointer; font-size: 1.1em;"
+                                onclick="bukaModalStokCepat('<?= $row['id_produk'] ?>', '<?= addslashes($row['nama_produk']) ?>')">
+                             </i>
+
                              <i class="fa-solid fa-triangle-exclamation" title="Lapor Barang Rusak" style="color: #e74c3c; cursor:pointer; font-size: 1.1em;"
                                 onclick="bukaModalRusak('<?= $row['id_produk'] ?>', '<?= addslashes($row['nama_produk']) ?>', '<?= $stok ?>')">
                              </i>
                              
                              <i class="fa-regular fa-pen-to-square aksi-edit" title="Edit Produk" style="color: var(--cokelat-tua); cursor:pointer;"
-                                onclick="bukaModal('edit', '<?= $row['id_produk'] ?>', '<?= addslashes($row['nama_produk']) ?>', '<?= $row['stok'] ?>', '<?= $row['harga_satuan'] ?>', '<?= $row['batas_minimal'] ?>', '<?= $jenis_p ?>', '<?= $row['modal']??0 ?>', '<?= $row['biaya_produksi']??0 ?>', '<?= $row['hpp']??0 ?>')">
+                                onclick="bukaModal('edit', '<?= $row['id_produk'] ?>', '<?= addslashes($row['nama_produk']) ?>', '<?= $row['stok'] ?>', '<?= $row['harga_satuan'] ?>', '<?= $row['batas_minimal'] ?>', '<?= $jenis_p ?>', '<?= $row['modal']??0 ?>', '<?= $row['biaya_produksi']??0 ?>')">
                              </i>
                              
                              <a href="stok.php?hapus=<?= $row['id_produk'] ?>" onclick="return confirm('Hapus produk <?= addslashes($row['nama_produk']) ?>?')" class="tombol-hapus-teks">Hapus</a>
@@ -260,18 +299,17 @@ if (isset($_POST['proses_tambah_cepat'])) {
                         <option value="Produksi">Produksi Sendiri</option>
                     </select>
                 </div>
+                
                 <div id="formLuar" class="input-grup">
-                    <label>Modal / Harga Beli (Rp)</label>
+                    <label>Modal / Harga Beli Satuan (Rp)</label>
                     <input type="number" name="modal" id="mModal" value="0">
                 </div>
+                
                 <div id="formProduksi" style="display: none; background: #f9f9f9; padding: 10px; border-radius: 6px; margin-bottom: 15px;">
-                    <div class="input-grup">
-                        <label>Biaya Produksi (Rp)</label>
-                        <input type="number" name="biaya_produksi" id="mBiaya" value="0">
-                    </div>
                     <div class="input-grup" style="margin-bottom: 0;">
-                        <label>HPP (Rp)</label>
-                        <input type="number" name="hpp" id="mHpp" value="0">
+                        <label>Total Biaya Produksi (Rp)</label>
+                        <input type="number" name="biaya_produksi" id="mBiaya" value="0">
+                        <small style="color: #888; margin-top: 5px; display: block;">*HPP per satuan akan dihitung otomatis berdasarkan jumlah stok.</small>
                     </div>
                 </div>
                 
@@ -318,7 +356,7 @@ if (isset($_POST['proses_tambah_cepat'])) {
 
                 <div class="input-grup">
                     <label>Keterangan / Penyebab (Opsional)</label>
-                    <textarea name="keterangan_rusak" rows="3" placeholder="Contoh: Jatuh saat di gudang, expired, dll..."></textarea>
+                    <textarea name="keterangan_rusak" rows="3" placeholder="Contoh: Jatuh saat di gudang, basi, dll..."></textarea>
                 </div>
                 
                 <button type="submit" name="lapor_rusak" class="btn-simpan" style="background: #e74c3c;">Proses Laporan</button>
@@ -326,9 +364,41 @@ if (isset($_POST['proses_tambah_cepat'])) {
         </div>
     </div>
 
+    <div class="modal-bg" id="modalStokCepat">
+        <div class="modal-konten">
+            <div class="modal-head">
+                <h3>Tambah Stok Masuk (Batch Baru)</h3>
+                <i class="fa-solid fa-xmark" style="cursor: pointer" onclick="tutupModal('modalStokCepat')"></i>
+            </div>
+            <form action="stok.php" method="POST" class="modal-body">
+                <input type="hidden" name="id_produk_cepat" id="cId">
+                
+                <p style="margin-bottom: 15px; font-size: 0.9em;">
+                    Produk: <strong id="cNamaProduk"></strong>
+                </p>
+
+                <div class="input-grup">
+                    <label>Jumlah Stok yang Ditambahkan</label>
+                    <input type="number" name="jumlah_tambah" required min="1">
+                </div>
+
+                <div class="input-grup">
+                    <label>Total Biaya / Modal Tagihan (Rp)</label>
+                    <input type="number" name="biaya_batch_baru" required min="0">
+                    <small style="color: #888; display: block; margin-top: 5px;">
+                        Masukkan <strong>TOTAL</strong> biaya kulakan nota ini (untuk Produk Luar) ATAU total biaya produksi (untuk Produk Dalam). Sistem akan menghitung rata-rata Modal/HPP otomatis.
+                    </small>
+                </div>
+                
+                <button type="submit" name="proses_tambah_cepat" class="btn-simpan" style="background: #27ae60;">Update Stok & Harga</button>
+            </form>
+        </div>
+    </div>
+
     <script>
         const modalUtama = document.getElementById('modalProduk');
         const modalRusak = document.getElementById('modalRusak');
+        const modalStokCepat = document.getElementById('modalStokCepat');
         
         function ubahTampilanForm() {
             const jenis = document.getElementById('mJenis').value;
@@ -341,7 +411,8 @@ if (isset($_POST['proses_tambah_cepat'])) {
             }
         }
 
-        function bukaModal(mode, id = '', nama = '', stok = '', harga = '', batas = '10', jenis = 'Luar', modalVal = '0', biayaVal = '0', hppVal = '0') {
+        // Fungsi buka modal edit/tambah
+        function bukaModal(mode, id = '', nama = '', stok = '', harga = '', batas = '10', jenis = 'Luar', modalVal = '0', biayaVal = '0') {
             modalUtama.style.display = 'flex';
             document.getElementById('mId').value = id;
             document.getElementById('mNama').value = nama;
@@ -351,7 +422,6 @@ if (isset($_POST['proses_tambah_cepat'])) {
             document.getElementById('mJenis').value = jenis;
             document.getElementById('mModal').value = modalVal;
             document.getElementById('mBiaya').value = biayaVal;
-            document.getElementById('mHpp').value = hppVal;
             ubahTampilanForm(); 
             document.getElementById('mTitle').innerText = mode === 'edit' ? 'Edit Produk' : 'Tambah Produk Baru';
             document.getElementById('mBtn').innerText = mode === 'edit' ? 'Simpan Perubahan' : 'Simpan Produk';
@@ -366,11 +436,18 @@ if (isset($_POST['proses_tambah_cepat'])) {
             document.getElementById('rJumlah').max = stokSekarang; 
         }
 
+        function bukaModalStokCepat(id, nama) {
+            modalStokCepat.style.display = 'flex';
+            document.getElementById('cId').value = id;
+            document.getElementById('cNamaProduk').innerText = nama;
+        }
+
         function tutupModal(idModal) { document.getElementById(idModal).style.display = 'none'; }
         
         window.onclick = function(event) { 
             if (event.target == modalUtama) tutupModal('modalProduk'); 
             if (event.target == modalRusak) tutupModal('modalRusak'); 
+            if (event.target == modalStokCepat) tutupModal('modalStokCepat');
         }
     </script>
 </body>
