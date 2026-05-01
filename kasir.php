@@ -113,7 +113,8 @@ $urut = isset($_GET['urut']) ? $_GET['urut'] : 'default';
 
 $sql = "SELECT * FROM produk WHERE stok > 0";
 if ($cari != "") {
-    $sql .= " AND (nama_produk LIKE '%$cari%' OR kategori LIKE '%$cari%')";
+
+    $sql .= " AND (nama_produk LIKE '%$cari%' OR jenis_produk LIKE '%$cari%')";
 }
 
 if ($urut == "stok_kecil") {
@@ -123,7 +124,6 @@ if ($urut == "stok_kecil") {
 } else {
     $sql .= " ORDER BY id_produk DESC";
 }
-
 $tanggal_indo = hari_indo(date("D")) . ', ' . tgl_full(date("Y-m-d"));
 ?>
 
@@ -172,16 +172,16 @@ $tanggal_indo = hari_indo(date("D")) . ', ' . tgl_full(date("Y-m-d"));
         }
         .card-produk:hover { border-color: var(--accent); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
 
-        /* BAGIAN STOK DENGAN BACKGROUND (Capsule Style) */
+       ___
         .stok-info { 
             font-size: 0.8rem; 
             font-weight: 600;
             margin-top: 15px; 
             color: #e67e22; 
-            background: #fff5eb; /* Warna oren muda */
+            background: #fff5eb; 
             padding: 6px 15px; 
-            border-radius: 50px; /* Bentuk lonjong/kapsul */
-            display: block; /* Agar memenuhi lebar kartu jika perlu */
+            border-radius: 50px; 
+            display: block;
             width: fit-content;
             margin-left: auto;
             margin-right: auto;
