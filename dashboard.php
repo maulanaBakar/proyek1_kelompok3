@@ -43,6 +43,23 @@ $saldo_kasir = $m - $k;
 $q_max = mysqli_query($koneksi, "SELECT SUM(jumlah_produk) as max_jual FROM detail_transaksi GROUP BY id_produk ORDER BY max_jual DESC LIMIT 1");
 $d_max = mysqli_fetch_assoc($q_max);
 $max_terjual = $d_max['max_jual'] ?? 1;
+
+// ==========================================
+// FASE 6: ASISTEN ANALITIK (RADAR STOK MATI)
+// ==========================================
+// Cari produk yg STOK > 0 tapi TIDAK PERNAH TERJUAL selama 14 HARI TERAKHIR
+$q_stok_mati = mysqli_query($koneksi, "
+    SELECT p.nama_produk, p.stok, MAX(t.tanggal_transaksi) as terakhir_terjual
+    FROM produk p
+    LEFT JOIN detail_transaksi d ON p.id_produk = d.id_produk
+    LEFT JOIN transaksi t ON d.id_transaksi = t.id_transaksi
+    WHERE p.stok > 0
+    GROUP BY p.id_produk
+    HAVING terakhir_terjual < DATE_SUB(CURDATE(), INTERVAL 14 DAY) OR terakhir_terjual IS NULL
+    ORDER BY p.stok DESC
+    LIMIT 3
+");
+$jumlah_stok_mati = mysqli_num_rows($q_stok_mati);
 ?>
 
 <!doctype html>
@@ -53,7 +70,7 @@ $max_terjual = $d_max['max_jual'] ?? 1;
     <title>Dashboard - <?= $nama_toko ?></title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="css/dashboard.css">
     <style>
         .dashboard-container { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-top: 20px; }
         .baris-kotak { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
@@ -140,6 +157,37 @@ $max_terjual = $d_max['max_jual'] ?? 1;
                     <div class="angka-besar"><?= $total_stok_low ?> <span>Produk</span></div>
                 </div>
             </div>
+        </div>
+
+        <div style="background: linear-gradient(135deg, #fdfbf7 0%, #f4e8d8 100%); padding: 20px; border-radius: 15px; border: 2px dashed #d4a373; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+            <h3 style="margin-top: 0; color: #d35400; font-size: 1.1em; display:flex; align-items:center; gap:10px;">
+                <i class="fa-solid fa-robot"></i> Asisten Toko Pintar (Radar Stok Mati)
+            </h3>
+            <p style="font-size: 0.85em; color: #666; margin-bottom: 15px;">Mendeteksi uang modal yang mandek! Produk di bawah ini belum laku lebih dari 14 hari. Pertimbangkan untuk diobral.</p>
+            
+            <?php if($jumlah_stok_mati > 0): ?>
+                <table class="tabel-mini" style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                    <tbody>
+                        <?php while($m = mysqli_fetch_assoc($q_stok_mati)): 
+                            $tgl_jual = $m['terakhir_terjual'] ? date('d/m/Y', strtotime($m['terakhir_terjual'])) : 'Belum pernah laku';
+                        ?>
+                        <tr>
+                            <td style="padding-left:15px; border-left: 4px solid #e74c3c;">
+                                <strong><?= htmlspecialchars($m['nama_produk']) ?></strong><br>
+                                <span style="font-size:0.8em; color:#888;"><i class="fa-regular fa-clock"></i> Terakhir laku: <?= $tgl_jual ?></span>
+                            </td>
+                            <td style="text-align:right; padding-right:15px;">
+                                <span class="badge badge-danger">Nganggur <?= $m['stok'] ?> Pcs</span>
+                            </td>
+                        </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+            <?php else: ?>
+                <div style="background: white; padding: 12px; border-radius: 8px; text-align: center; color: #27ae60; font-weight: 600; font-size: 0.9em; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                    <i class="fa-solid fa-check-circle"></i> Mantap! Perputaran stok cepat, tidak ada barang yang mengendap lama.
+                </div>
+            <?php endif; ?>
         </div>
 
         <div class="dashboard-container">

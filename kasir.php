@@ -70,7 +70,7 @@ if(isset($_GET['aksi']) && $_GET['aksi'] == "hapus") {
 }
 
 // =========================================================================
-// FASE 2: LOGIKA PROSES BAYAR (DISKON, KASBON, BUKU KAS)
+// FASE 5: LOGIKA PROSES BAYAR & KASBON
 // =========================================================================
 if(isset($_POST['proses_bayar'])) {
     if(!empty($_SESSION['keranjang'])) {
@@ -78,32 +78,39 @@ if(isset($_POST['proses_bayar'])) {
         $total_awal    = (int)$_POST['total_awal'];
         $diskon_global = (int)($_POST['diskon_global'] ?? 0);
         
+        // Data Tambahan dari Form (Fase 5)
+        $nama_pelanggan_raw = mysqli_real_escape_string($koneksi, $_POST['nama_pelanggan'] ?? '');
+        $nama_pelanggan = empty(trim($nama_pelanggan_raw)) ? "UMUM" : $nama_pelanggan_raw; 
+
         // Hitung total setelah diskon
         $total_akhir = $total_awal - $diskon_global;
         if($total_akhir < 0) $total_akhir = 0;
 
-        // Logika Uang Pas Otomatis
+        // Logika Uang Pas & Deteksi Kasbon
         $uang_diterima_raw = $_POST['uang_diterima'] ?? '';
         if(trim($uang_diterima_raw) === '') {
-            $uang_diterima = $total_akhir; // Jika input tidak diisi, anggap uangnya PAS
+            $uang_diterima = $total_akhir; // Dianggap Pas
         } else {
             $uang_diterima = (int)str_replace('.', '', $uang_diterima_raw); 
         }
 
         $kurang_bayar = 0;
-        $status_transaksi = 'Lunas';
+        $status_bayar = 'Lunas';
 
-        // Deteksi apakah uangnya kurang (Skenario Kasbon)
+        // Deteksi apakah uangnya kurang (Skenario Kasbon yang Sebenarnya)
         if($uang_diterima < $total_akhir) {
             $kurang_bayar = $total_akhir - $uang_diterima;
-            $status_transaksi = 'Pending';
+            $status_bayar = 'Kasbon';
         }
 
         $tgl = date("Y-m-d H:i:s");
 
-        // Masukkan ke tabel transaksi
-        mysqli_query($koneksi, "INSERT INTO transaksi (tanggal_transaksi, total_pendapatan, status_transaksi, diskon_global, kurang_bayar) 
-                                VALUES ('$tgl', '$total_akhir', '$status_transaksi', '$diskon_global', '$kurang_bayar')");
+        // INSERT KE TABEL TRANSAKSI (Sesuai Kolom Baru Fase 5)
+        // Kita menggunakan "Lunas" / "Kasbon" di kolom status_bayar
+        mysqli_query($koneksi, "INSERT INTO transaksi 
+            (tanggal_transaksi, nama_pelanggan, total_pendapatan, uang_diterima, status_bayar, status_transaksi, diskon_global, kurang_bayar) 
+            VALUES 
+            ('$tgl', '$nama_pelanggan', '$total_akhir', '$uang_diterima', '$status_bayar', 'Selesai', '$diskon_global', '$kurang_bayar')");
         
         $id_transaksi = mysqli_insert_id($koneksi);
 
@@ -124,26 +131,26 @@ if(isset($_POST['proses_bayar'])) {
             mysqli_query($koneksi, "UPDATE produk SET stok = stok - $qty WHERE id_produk = '$id_produk'");
         }
 
-        // =========================================================
-        // PENCATATAN OTOMATIS KE BUKU KAS
-        // =========================================================
+        // PENCATATAN KE BUKU KAS (Hanya yang diterima di hari itu)
         $uang_masuk_kas = ($uang_diterima < $total_akhir) ? $uang_diterima : $total_akhir;
 
         if ($uang_masuk_kas > 0) {
-            $keterangan = "Pendapatan Transaksi #" . $id_transaksi;
-            if ($status_transaksi == "Pending") {
-                $keterangan .= " (KASBON - Sisa: Rp ".number_format($kurang_bayar,0,',','.').")";
+            $keterangan = "TRX #" . $id_transaksi;
+            if ($nama_pelanggan != "UMUM") {
+                $keterangan .= " ($nama_pelanggan)";
+            }
+            if ($status_bayar == "Kasbon") {
+                $keterangan .= " [DP KASBON]";
             }
             mysqli_query($koneksi, "INSERT INTO buku_kas (tanggal, keterangan, jenis, nominal) 
                                     VALUES ('$tgl', '$keterangan', 'Pemasukan', '$uang_masuk_kas')");
         }
-        
 
         unset($_SESSION['keranjang']);
         
-        // Munculkan notifikasi dinamis
-        if($status_transaksi == 'Pending') {
-            echo "<script>alert('Transaksi Kasbon Disimpan! Kurang Bayar: Rp ".number_format($kurang_bayar,0,',','.')."'); window.location='kasir.php';</script>";
+        // Notifikasi setelah transaksi
+        if($status_bayar == 'Kasbon') {
+            echo "<script>alert('Berhasil! KASBON a.n $nama_pelanggan tercatat. (Sisa: Rp ".number_format($kurang_bayar,0,',','.').")'); window.location='kasir.php';</script>";
         } else {
             echo "<script>alert('Pembayaran Lunas Berhasil!'); window.location='kasir.php';</script>";
         }
@@ -180,7 +187,7 @@ $tanggal_indo = hari_indo(date("D")) . ', ' . tgl_full(date("Y-m-d"));
     <title>Kasir - 2 PAKSI</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="css/dashboard.css">
     <style>
         :root { --primary: #4a3e3d; --accent: #d6c4b0; --bg-body: #fdfbf7; --text-main: #2d2424; --green: #27ae60; --red: #e74c3c; }
         .main-grid { display: grid; grid-template-columns: 1fr 400px; gap: 25px; align-items: start; }
@@ -199,16 +206,13 @@ $tanggal_indo = hari_indo(date("D")) . ', ' . tgl_full(date("Y-m-d"));
         
         .cart-footer { padding: 20px; background: #fafafa; border-top: 1px solid #eee; }
         
-        /* TOMBOL BAYAR UTAMA */
         .btn-bayar { width: 100%; padding: 14px; border-radius: 10px; border: none; background: var(--green); color: white; font-weight: 800; cursor: pointer; font-size: 1.1rem; margin-top: 5px; transition: 0.2s;}
         .btn-bayar:hover { background: #219653; }
         .btn-bayar:disabled { background: #ccc; cursor: not-allowed; }
 
-        /* TOGGLE OPSI KASBON/DISKON */
         .btn-opsi { width: 100%; padding: 10px; border-radius: 8px; border: 1px dashed #ccc; background: #fff; color: #666; font-weight: 600; cursor: pointer; font-size: 0.9rem; transition: 0.2s; margin-bottom: 10px;}
         .btn-opsi:hover { background: #f1f2f6; color: var(--primary); border-color: var(--primary); }
         
-        /* PANEL FORM OPSI */
         .panel-opsi { background: #fff; border: 1px solid #eee; border-radius: 10px; padding: 15px; margin-bottom: 15px; display: none; }
         .input-kasir { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-weight: bold; font-family: inherit; box-sizing: border-box; transition: 0.3s;}
         .input-kasir:focus { border-color: var(--accent); outline: none; }
@@ -235,7 +239,7 @@ $tanggal_indo = hari_indo(date("D")) . ', ' . tgl_full(date("Y-m-d"));
                 <a href="stok.php" class="link-menu"><i class="fa-solid fa-box"></i> Stok Barang</a>
                 <a href="buku_kas.php" class="link-menu"><i class="fa-solid fa-wallet"></i> Buku Kas</a>
                 <a href="laporan.php" class="link-menu"><i class="fa-solid fa-file-lines"></i> Laporan</a>
-                <a href="pengaturan.php" class="link-menu"><i class="fa-solid fa-gear"></i> <span>Pengaturan</span></a>
+                <a href="pengaturan.php" class="link-menu"><i class="fa-solid fa-gear"></i> Pengaturan</a>
             </nav>
         </div>
         <div class="bagian-bawah">
@@ -301,7 +305,7 @@ $tanggal_indo = hari_indo(date("D")) . ', ' . tgl_full(date("Y-m-d"));
                 </div>
 
                 <div class="cart-footer">
-                    <form method="POST" id="formPembayaran" onsubmit="bersihkanInputSebelumKirim()">
+                    <form method="POST" id="formPembayaran" onsubmit="return validasiKasbon()">
                         <input type="hidden" name="total_awal" id="totalAwal" value="<?= $total ?>">
                         
                         <div style="display:flex; justify-content:space-between; margin-bottom:15px; font-weight:800; font-size:1.4rem; color: var(--primary);">
@@ -310,22 +314,28 @@ $tanggal_indo = hari_indo(date("D")) . ', ' . tgl_full(date("Y-m-d"));
                         </div>
 
                         <button type="button" class="btn-opsi" id="btnToggle" onclick="toggleOpsi()" <?= ($total == 0) ? 'disabled' : '' ?>>
-                            <i class="fa-solid fa-chevron-down"></i> Klik jika ada Diskon / Uang Pelanggan tidak pas
+                            <i class="fa-solid fa-chevron-down"></i> Klik Jika Ada Diskon / Pelanggan Kasbon
                         </button>
 
                         <div id="panelOpsi" class="panel-opsi">
+                            
+                            <div style="margin-bottom: 10px;">
+                                <label style="font-size: 0.85em; font-weight: 700; color: #888; display: block; margin-bottom: 5px;">Nama Pelanggan <span style="color:red; font-size:0.8em; display:none;" id="labelWajib">(Wajib Isi Jika Kasbon)</span></label>
+                                <input type="text" name="nama_pelanggan" id="namaPelanggan" class="input-kasir" placeholder="Kosongkan jika umum" style="border-color: #3498db;">
+                            </div>
+
                             <div style="margin-bottom: 10px;">
                                 <label style="font-size: 0.85em; font-weight: 700; color: #888; display: block; margin-bottom: 5px;">Diskon Global (Rp)</label>
                                 <input type="text" name="diskon_global" id="diskonGlobal" class="input-kasir" value="" placeholder="Cth: 5.000" onkeyup="formatDanHitung(this)">
                             </div>
 
                             <div style="margin-bottom: 5px;">
-                                <label style="font-size: 0.85em; font-weight: 700; color: #888; display: block; margin-bottom: 5px;">Uang Diterima (Rp)</label>
+                                <label style="font-size: 0.85em; font-weight: 700; color: #888; display: block; margin-bottom: 5px;">Uang Diterima / DP (Rp)</label>
                                 <input type="text" name="uang_diterima" id="uangDiterima" class="input-kasir" value="" placeholder="Kosongkan jika uang pas" onkeyup="formatDanHitung(this)" style="border-color: var(--green); color: var(--green);">
                             </div>
 
                             <div id="boxStatus" class="status-box" style="background: #e8f8f5; color: var(--green);">
-                                ✅ Status: Uang Pas
+                                ✅ Status: Lunas (Uang Pas)
                             </div>
                         </div>
 
@@ -340,8 +350,8 @@ $tanggal_indo = hari_indo(date("D")) . ', ' . tgl_full(date("Y-m-d"));
 
     <script>
         let formTerbuka = false;
+        let isKasbon = false; // Penanda apakah transaksi ini kasbon
 
-        // Fungsi Membuka/Menutup Form Opsi
         function toggleOpsi() {
             let panel = document.getElementById('panelOpsi');
             let btn = document.getElementById('btnToggle');
@@ -354,21 +364,20 @@ $tanggal_indo = hari_indo(date("D")) . ', ' . tgl_full(date("Y-m-d"));
                 document.getElementById('uangDiterima').focus();
             } else {
                 panel.style.display = 'none';
-                btn.innerHTML = '<i class="fa-solid fa-chevron-down"></i> Klik jika ada Diskon / Uang Pelanggan tidak pas';
-                // Reset isian jika ditutup
+                btn.innerHTML = '<i class="fa-solid fa-chevron-down"></i> Klik Jika Ada Diskon / Pelanggan Kasbon';
+                // Reset isian
                 document.getElementById('diskonGlobal').value = '';
                 document.getElementById('uangDiterima').value = '';
+                document.getElementById('namaPelanggan').value = '';
                 kalkulasiUang();
             }
         }
 
-        // Membersihkan angka dari text (untuk perhitungan)
         function unformatRupiah(angka) { 
             if(angka === "") return "";
             return parseInt(angka.replace(/[^0-9]/g, '')) || 0; 
         }
 
-        // Memberi titik otomatis (Format IDR)
         function formatRupiah(angka) {
             let number_string = angka.replace(/[^0-9]/g, '').toString();
             let sisa = number_string.length % 3;
@@ -391,10 +400,9 @@ $tanggal_indo = hari_indo(date("D")) . ', ' . tgl_full(date("Y-m-d"));
             let totalAwal = parseInt(document.getElementById('totalAwal').value) || 0;
             let valDiskon = document.getElementById('diskonGlobal').value;
             let valUang = document.getElementById('uangDiterima').value;
+            let labelWajib = document.getElementById('labelWajib');
 
             let diskon = unformatRupiah(valDiskon) || 0;
-            
-            // Hitung Total Setelah Diskon
             let totalAkhir = totalAwal - diskon;
             if (totalAkhir < 0) totalAkhir = 0;
 
@@ -402,11 +410,12 @@ $tanggal_indo = hari_indo(date("D")) . ', ' . tgl_full(date("Y-m-d"));
 
             let boxStatus = document.getElementById('boxStatus');
             
-            // Jika kolom uang kosong, anggap uang pas
             if (valUang === "") {
                 boxStatus.style.background = '#e8f8f5';
                 boxStatus.style.color = 'var(--green)';
-                boxStatus.innerHTML = '✅ Status: Uang Pas';
+                boxStatus.innerHTML = '✅ Status: Lunas (Uang Pas)';
+                isKasbon = false;
+                labelWajib.style.display = 'none';
                 return;
             }
 
@@ -416,23 +425,37 @@ $tanggal_indo = hari_indo(date("D")) . ', ' . tgl_full(date("Y-m-d"));
             if (kembalian < 0) {
                 boxStatus.style.background = '#ffebee';
                 boxStatus.style.color = 'var(--red)';
-                boxStatus.innerHTML = '⚠️ KASBON / KURANG: Rp ' + Math.abs(kembalian).toLocaleString('id-ID');
+                boxStatus.innerHTML = '⚠️ STATUS: KASBON (Kurang Rp ' + Math.abs(kembalian).toLocaleString('id-ID') + ')';
+                isKasbon = true;
+                labelWajib.style.display = 'inline'; // Tampilkan wajib isi nama
             } else {
                 boxStatus.style.background = '#e8f8f5';
                 boxStatus.style.color = 'var(--green)';
                 boxStatus.innerHTML = '✅ KEMBALIAN: Rp ' + kembalian.toLocaleString('id-ID');
+                isKasbon = false;
+                labelWajib.style.display = 'none';
             }
         }
 
-        // Mencegah error input ke database
-        function bersihkanInputSebelumKirim() {
+        // FASE 5: Validasi sebelum mensubmit form
+        function validasiKasbon() {
+            let nama = document.getElementById('namaPelanggan').value;
+            
+            // Jika Kasbon, Wajib Isi Nama
+            if(isKasbon && nama.trim() === "") {
+                alert("PENTING: Transaksi Kasbon / Kurang Bayar WAJIB mengisi Nama Pelanggan!");
+                document.getElementById('namaPelanggan').focus();
+                return false; // Batalkan submit
+            }
+
+            // Bersihkan format titik sebelum kirim ke PHP
             let d = document.getElementById('diskonGlobal');
             let u = document.getElementById('uangDiterima');
             d.value = unformatRupiah(d.value);
-            // Hanya bersihkan uang jika ada isinya, biarkan kosong jika memang uang pas
             if(u.value !== "") {
                 u.value = unformatRupiah(u.value);
             }
+            return true; // Lanjut submit
         }
     </script>
 </body>

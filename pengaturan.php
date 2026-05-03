@@ -72,7 +72,7 @@ $data_toko = mysqli_fetch_assoc($query_toko);
     <title>Pengaturan - 2 Paksi</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="css/dashboard.css">
     <style>
         .pengaturan-grid {
             display: grid;
