@@ -7,10 +7,10 @@ if (isset($_POST['save'])) {
     $nama_produk   = mysqli_real_escape_string($koneksi, $_POST['nama_produk']);
     $stok          = (int)$_POST['stok'];
     $batas_minimal = (int)$_POST['batas_minimal'];
-    $harga_jual    = (int)$_POST['harga_jual'];
+    $harga_jual    = (int)str_replace('.', '', $_POST['harga_jual']);
     $jenis_produk  = mysqli_real_escape_string($koneksi, $_POST['jenis_produk']);
-    $modal_beli    = (int)($_POST['modal'] ?? 0);
-    $biaya_prod    = (int)($_POST['biaya_produksi'] ?? 0);
+    $modal_beli    = (int)str_replace('.', '', $_POST['modal'] ?? '0');
+    $biaya_prod    = (int)str_replace('.', '', $_POST['biaya_produksi'] ?? '0');
     $hpp           = 0;
 
     // Perhitungan Otomatis: HPP untuk Produksi, Modal untuk Luar
@@ -87,7 +87,7 @@ if (isset($_POST['lapor_rusak'])) {
 // --- PROSES HAPUS ---
 if (isset($_GET['hapus'])) {
     $id = mysqli_real_escape_string($koneksi, $_GET['hapus']);
-    mysqli_query($koneksi, "DELETE FROM produk WHERE id_produk = '$id'");
+    mysqli_query($koneksi, "UPDATE produk  SET status_aktif  = 'N' WHERE id_produk = '$id'");
     echo "<script>alert('Data Berhasil Dihapus'); window.location='stok.php';</script>";
     exit;
 }
@@ -96,7 +96,7 @@ if (isset($_GET['hapus'])) {
 if (isset($_POST['proses_tambah_cepat'])) {
     $id = mysqli_real_escape_string($koneksi, $_POST['id_produk_cepat']);
     $jumlah_tambah = (int)$_POST['jumlah_tambah'];
-    $biaya_batch_baru = (int)$_POST['biaya_batch_baru']; // Total tagihan kulakan ATAU total biaya produksi
+    $biaya_batch_baru = (int)str_replace('.', '', $_POST['biaya_batch_baru']); // Total tagihan kulakan ATAU total biaya produksi
 
     // Ambil data produk saat ini
     $cek = mysqli_query($koneksi, "SELECT stok, jenis_produk, modal, hpp FROM produk WHERE id_produk = '$id'");
@@ -226,8 +226,8 @@ if (isset($_POST['proses_tambah_cepat'])) {
                 </thead>
                 <tbody>
                     <?php
-                    $kondisi = [];
-                    if (!empty($_GET['cari'])) { $kondisi[] = "nama_produk LIKE '%" . mysqli_real_escape_string($koneksi, $_GET['cari']) . "%'"; }
+                    $kondisi = ["status_aktif = 'Y'"];
+                    if (!empty($_GET['cari'])) { $caribersih = trim($_GET['cari']); $kondisi[] = "nama_produk LIKE '%" . mysqli_real_escape_string($koneksi, $caribersih) . "%'"; }
                     if (!empty($_GET['jenis'])) { $kondisi[] = "jenis_produk = '" . mysqli_real_escape_string($koneksi, $_GET['jenis']) . "'"; }
                     if (!empty($_GET['status'])) {
                         if ($_GET['status'] == 'habis') { $kondisi[] = "stok <= 0"; }
