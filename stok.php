@@ -169,6 +169,7 @@ if (isset($_POST['proses_tambah_cepat'])) {
                 <a href="dashboard.php" class="link-menu"><i class="fa-solid fa-house"></i> Beranda</a>
                 <a href="kasir.php" class="link-menu"><i class="fa-solid fa-cash-register"></i> Kasir</a>
                 <a href="stok.php" class="link-menu aktif"><i class="fa-solid fa-box"></i> Stok Barang</a>
+                <a href="buku_kas.php" class="link-menu"><i class="fa-solid fa-wallet"></i> Buku Kas</a>
                 <a href="laporan.php" class="link-menu"><i class="fa-solid fa-file-lines"></i> Laporan</a>
                 <a href="pengaturan.php" class="link-menu"><i class="fa-solid fa-gear"></i> Pengaturan</a>
             </nav>

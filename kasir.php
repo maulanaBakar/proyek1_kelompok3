@@ -70,18 +70,25 @@ if(isset($_GET['aksi']) && $_GET['aksi'] == "hapus") {
 }
 
 // =========================================================================
-// FASE 2: LOGIKA PROSES BAYAR (DISKON GLOBAL & KASBON)
+// FASE 2: LOGIKA PROSES BAYAR (DISKON, KASBON, BUKU KAS)
 // =========================================================================
 if(isset($_POST['proses_bayar'])) {
     if(!empty($_SESSION['keranjang'])) {
         
         $total_awal    = (int)$_POST['total_awal'];
         $diskon_global = (int)($_POST['diskon_global'] ?? 0);
-        $uang_diterima = (int)str_replace('.', '', $_POST['uang_diterima']); 
         
-        // Hitung total setelah diskon (Tawar menawar)
+        // Hitung total setelah diskon
         $total_akhir = $total_awal - $diskon_global;
         if($total_akhir < 0) $total_akhir = 0;
+
+        // Logika Uang Pas Otomatis
+        $uang_diterima_raw = $_POST['uang_diterima'] ?? '';
+        if(trim($uang_diterima_raw) === '') {
+            $uang_diterima = $total_akhir; // Jika input tidak diisi, anggap uangnya PAS
+        } else {
+            $uang_diterima = (int)str_replace('.', '', $uang_diterima_raw); 
+        }
 
         $kurang_bayar = 0;
         $status_transaksi = 'Lunas';
@@ -94,7 +101,7 @@ if(isset($_POST['proses_bayar'])) {
 
         $tgl = date("Y-m-d H:i:s");
 
-        // Masukkan ke tabel transaksi dengan struktur Fase 2
+        // Masukkan ke tabel transaksi
         mysqli_query($koneksi, "INSERT INTO transaksi (tanggal_transaksi, total_pendapatan, status_transaksi, diskon_global, kurang_bayar) 
                                 VALUES ('$tgl', '$total_akhir', '$status_transaksi', '$diskon_global', '$kurang_bayar')");
         $id_transaksi = mysqli_insert_id($koneksi);
@@ -116,6 +123,18 @@ if(isset($_POST['proses_bayar'])) {
             mysqli_query($koneksi, "UPDATE produk SET stok = stok - $qty WHERE id_produk = '$id_produk'");
         }
 
+        // =========================================================
+        // PENCATATAN OTOMATIS KE BUKU KAS
+        // =========================================================
+        $uang_masuk_kas = ($uang_diterima < $total_akhir) ? $uang_diterima : $total_akhir;
+
+        if ($uang_masuk_kas > 0) {
+            $keterangan = "Pendapatan Transaksi #" . $id_transaksi;
+            mysqli_query($koneksi, "INSERT INTO buku_kas (tanggal, keterangan, jenis, nominal) 
+                                    VALUES ('$tgl', '$keterangan', 'Pemasukan', '$uang_masuk_kas')");
+        }
+        // =========================================================
+
         unset($_SESSION['keranjang']);
         
         // Munculkan notifikasi dinamis
@@ -134,7 +153,6 @@ if(isset($_POST['proses_bayar'])) {
 $cari = isset($_GET['cari']) ? trim(mysqli_real_escape_string($koneksi, $_GET['cari'])) : '';
 $urut = isset($_GET['urut']) ? $_GET['urut'] : 'default';
 
-// Hanya tampilkan produk yang stoknya ada DAN tidak dihapus (status_aktif='Y')
 $sql = "SELECT * FROM produk WHERE stok > 0 AND status_aktif = 'Y'";
 if ($cari != "") {
     $sql .= " AND (nama_produk LIKE '%$cari%')";
@@ -177,85 +195,24 @@ $tanggal_indo = hari_indo(date("D")) . ', ' . tgl_full(date("Y-m-d"));
         .qty-control button { border: none; background: transparent; font-size: 1.2rem; cursor: pointer; padding: 0 8px; color: var(--primary); }
         
         .cart-footer { padding: 20px; background: #fafafa; border-top: 1px solid #eee; }
-        .btn-bayar { width: 100%; padding: 14px; border-radius: 10px; border: none; background: var(--primary); color: white; font-weight: 800; cursor: pointer; font-size: 1.1rem; margin-top: 10px; transition: 0.2s;}
-        .btn-bayar:hover { background: #3a302f; }
+        
+        /* TOMBOL BAYAR UTAMA */
+        .btn-bayar { width: 100%; padding: 14px; border-radius: 10px; border: none; background: var(--green); color: white; font-weight: 800; cursor: pointer; font-size: 1.1rem; margin-top: 5px; transition: 0.2s;}
+        .btn-bayar:hover { background: #219653; }
         .btn-bayar:disabled { background: #ccc; cursor: not-allowed; }
+
+        /* TOGGLE OPSI KASBON/DISKON */
+        .btn-opsi { width: 100%; padding: 10px; border-radius: 8px; border: 1px dashed #ccc; background: #fff; color: #666; font-weight: 600; cursor: pointer; font-size: 0.9rem; transition: 0.2s; margin-bottom: 10px;}
+        .btn-opsi:hover { background: #f1f2f6; color: var(--primary); border-color: var(--primary); }
         
-        /* Modal Styles */
-        .modal-overlay { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(3px); }
-        .modal-box { background-color: var(--bg-body); margin: 8% auto; padding: 30px; border-radius: 15px; width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); animation: slideDown 0.3s ease-out; }
-        @keyframes slideDown { from { transform: translateY(-30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        /* PANEL FORM OPSI */
+        .panel-opsi { background: #fff; border: 1px solid #eee; border-radius: 10px; padding: 15px; margin-bottom: 15px; display: none; }
+        .input-kasir { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-weight: bold; font-family: inherit; box-sizing: border-box; transition: 0.3s;}
+        .input-kasir:focus { border-color: var(--accent); outline: none; }
         
-        .input-kasir { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-weight: bold; font-family: inherit; font-size: 1rem; box-sizing: border-box;}
-        .input-kasir:focus { outline: none; border-color: var(--accent); }
-        .btn-batal { width: 100%; padding: 12px; border-radius: 10px; border: 2px solid #ddd; background: transparent; color: #666; font-weight: 600; cursor: pointer; font-size: 1rem; margin-top: 10px; transition: 0.2s;}
-        .btn-batal:hover { background: #eee; }
+        .status-box { padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 0.9em; margin-top: 10px; transition: 0.3s; }
 
         @media (max-width: 1100px) { .main-grid { grid-template-columns: 1fr; } }
-        @media (max-width: 500px) { .modal-box { width: 90%; margin: 20% auto; } }
-        /* Styling Modal Pembayaran */
-.modal-pembayaran {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0; top: 0; width: 100%; height: 100%;
-    background-color: rgba(0,0,0,0.5);
-    backdrop-filter: blur(4px);
-}
-
-.modal-konten {
-    background-color: var(--bg-body);
-    margin: 5% auto;
-    padding: 30px;
-    border-radius: 20px;
-    width: 450px;
-    box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-    border: 1px solid var(--accent);
-    animation: slideDown 0.3s ease-out;
-}
-
-@keyframes slideDown {
-    from { transform: translateY(-50px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
-
-.form-group { margin-bottom: 20px; }
-.form-group label { display: block; font-weight: 800; margin-bottom: 8px; color: var(--primary); font-size: 0.9rem; }
-
-.input-modal {
-    width: 100%;
-    padding: 15px;
-    border: 2px solid #eee;
-    border-radius: 12px;
-    font-size: 1.2rem;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-weight: 800;
-    box-sizing: border-box;
-    transition: 0.3s;
-}
-
-.input-modal:focus {
-    outline: none;
-    border-color: var(--accent);
-    background: white;
-}
-
-.modal-footer {
-    display: flex;
-    gap: 10px;
-    margin-top: 25px;
-}
-
-.btn-batal {
-    flex: 1;
-    padding: 12px;
-    border-radius: 10px;
-    border: none;
-    background: #eee;
-    color: #666;
-    font-weight: 600;
-    cursor: pointer;
-}
     </style>
 </head>
 <body>
@@ -292,7 +249,7 @@ $tanggal_indo = hari_indo(date("D")) . ', ' . tgl_full(date("Y-m-d"));
             <div class="produk-section">
                 <form action="" method="GET" style="display:flex; gap:10px; margin-bottom:20px;">
                     <input type="text" name="cari" class="search-input" placeholder="Cari produk..." value="<?= htmlspecialchars($cari) ?>" style="flex:1; padding:12px; border-radius:10px; border:1px solid #ddd;">
-                    <button type="submit" class="btn-bayar" style="width:auto; padding:0 25px; margin-top:0;">Cari</button>
+                    <button type="submit" class="btn-bayar" style="width:auto; padding:0 25px; margin-top:0; background:var(--primary);">Cari</button>
                 </form>
 
                 <div class="produk-grid">
@@ -340,127 +297,119 @@ $tanggal_indo = hari_indo(date("D")) . ', ' . tgl_full(date("Y-m-d"));
                 </div>
 
                 <div class="cart-footer">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-weight:800; font-size:1.3rem; color: var(--primary);">
-                        <span>TOTAL</span>
-                        <span>Rp <?= number_format($total, 0, ',', '.') ?></span>
-                    </div>
-                    
-                    <button type="button" class="btn-bayar" onclick="konfirmasiPembayaran()" <?= ($total == 0) ? 'disabled' : '' ?>>
-                        <i class="fa-solid fa-money-bill-wave"></i> Proses Pembayaran
-                    </button>
+                    <form method="POST" id="formPembayaran" onsubmit="bersihkanInputSebelumKirim()">
+                        <input type="hidden" name="total_awal" id="totalAwal" value="<?= $total ?>">
+                        
+                        <div style="display:flex; justify-content:space-between; margin-bottom:15px; font-weight:800; font-size:1.4rem; color: var(--primary);">
+                            <span>TOTAL</span>
+                            <span id="teksTotalAkhir">Rp <?= number_format($total, 0, ',', '.') ?></span>
+                        </div>
+
+                        <button type="button" class="btn-opsi" id="btnToggle" onclick="toggleOpsi()" <?= ($total == 0) ? 'disabled' : '' ?>>
+                            <i class="fa-solid fa-chevron-down"></i> Klik jika ada Diskon / Uang Pelanggan tidak pas
+                        </button>
+
+                        <div id="panelOpsi" class="panel-opsi">
+                            <div style="margin-bottom: 10px;">
+                                <label style="font-size: 0.85em; font-weight: 700; color: #888; display: block; margin-bottom: 5px;">Diskon Global (Rp)</label>
+                                <input type="text" name="diskon_global" id="diskonGlobal" class="input-kasir" value="" placeholder="Cth: 5.000" onkeyup="formatDanHitung(this)">
+                            </div>
+
+                            <div style="margin-bottom: 5px;">
+                                <label style="font-size: 0.85em; font-weight: 700; color: #888; display: block; margin-bottom: 5px;">Uang Diterima (Rp)</label>
+                                <input type="text" name="uang_diterima" id="uangDiterima" class="input-kasir" value="" placeholder="Kosongkan jika uang pas" onkeyup="formatDanHitung(this)" style="border-color: var(--green); color: var(--green);">
+                            </div>
+
+                            <div id="boxStatus" class="status-box" style="background: #e8f8f5; color: var(--green);">
+                                ✅ Status: Uang Pas
+                            </div>
+                        </div>
+
+                        <button type="submit" name="proses_bayar" class="btn-bayar" <?= ($total == 0) ? 'disabled' : '' ?>>
+                            Proses Pembayaran
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
     </main>
 
-    <div id="modalPembayaran" class="modal-overlay">
-        <div class="modal-box">
-            <h2 style="color: var(--primary); text-align: center; margin-bottom: 20px; font-weight: 800;">Selesaikan Transaksi</h2>
-            <form method="POST">
-                <input type="hidden" name="total_awal" id="totalAwal" value="<?= $total ?>">
-                
-                <div style="display:flex; justify-content:space-between; margin-bottom:15px; font-weight:600; color:#555;">
-                    <span>Subtotal</span>
-                    <span>Rp <?= number_format($total, 0, ',', '.') ?></span>
-                </div>
-
-                <div style="margin-bottom: 15px;">
-                    <label style="font-size: 0.9em; font-weight: 700; color: #666; display: block; margin-bottom: 5px;">Diskon Global (Rp) - <i>Opsional</i></label>
-                    <input type="number" name="diskon_global" id="diskonGlobal" class="input-kasir" value="0" min="0" onkeyup="kalkulasiUang()" onchange="kalkulasiUang()">
-                </div>
-
-                <div style="display:flex; justify-content:space-between; margin-bottom:20px; font-weight:800; font-size:1.4rem; color: var(--primary);">
-                    <span>Tagihan</span>
-                    <span id="teksTotalAkhir">Rp <?= number_format($total, 0, ',', '.') ?></span>
-                </div>
-
-                <hr style="border:0; border-top:2px dashed #ddd; margin-bottom: 20px;">
-
-                <div style="margin-bottom: 15px;">
-                    <label style="font-size: 0.9em; font-weight: 700; color: #666; display: block; margin-bottom: 5px;">Uang Diterima (Rp)</label>
-                    <input type="number" name="uang_diterima" id="uangDiterima" class="input-kasir" required min="0" onkeyup="kalkulasiUang()" onchange="kalkulasiUang()" style="border: 2px solid var(--green); font-size: 1.2rem;">
-                </div>
-
-                <div id="boxStatus" style="padding: 12px; border-radius: 8px; text-align: center; font-weight: bold; background: #eee; margin-bottom: 20px;">
-                    Masukkan jumlah uang pelanggan.
-                </div>
-
-                <button type="submit" name="proses_bayar" class="btn-bayar" style="background: var(--green);">Bayar & Simpan Nota</button>
-                <button type="button" class="btn-batal" onclick="tutupModal()">Batalkan</button>
-            </form>
-        </div>
-    </div>
-
-    <div id="modalPembayaran" class="modal-overlay">
-        <div class="modal-box">
-            <h2 style="color: var(--primary); text-align: center; margin-bottom: 20px; font-weight: 800;">Selesaikan Transaksi</h2>
-            <form method="POST">
-                <input type="hidden" name="total_awal" id="totalAwal" value="<?= $total ?>">
-                
-                <div style="display:flex; justify-content:space-between; margin-bottom:15px; font-weight:600; color:#555;">
-                    <span>Subtotal</span>
-                    <span>Rp <?= number_format($total, 0, ',', '.') ?></span>
-                </div>
-
-                <div style="margin-bottom: 15px;">
-                    <label style="font-size: 0.9em; font-weight: 700; color: #666; display: block; margin-bottom: 5px;">Diskon Global (Rp) - <i>Opsional</i></label>
-                    <input type="number" name="diskon_global" id="diskonGlobal" class="input-kasir" value="0" min="0" onkeyup="kalkulasiUang()" onchange="kalkulasiUang()">
-                </div>
-
-                <div style="display:flex; justify-content:space-between; margin-bottom:20px; font-weight:800; font-size:1.4rem; color: var(--primary);">
-                    <span>Tagihan</span>
-                    <span id="teksTotalAkhir">Rp <?= number_format($total, 0, ',', '.') ?></span>
-                </div>
-
-                <hr style="border:0; border-top:2px dashed #ddd; margin-bottom: 20px;">
-
-                <div style="margin-bottom: 15px;">
-                    <label style="font-size: 0.9em; font-weight: 700; color: #666; display: block; margin-bottom: 5px;">Uang Diterima (Rp)</label>
-                    <input type="number" name="uang_diterima" id="uangDiterima" class="input-kasir" required min="0" onkeyup="kalkulasiUang()" onchange="kalkulasiUang()" style="border: 2px solid var(--green); font-size: 1.2rem;">
-                </div>
-
-                <div id="boxStatus" style="padding: 12px; border-radius: 8px; text-align: center; font-weight: bold; background: #eee; margin-bottom: 20px;">
-                    Masukkan jumlah uang pelanggan.
-                </div>
-
-                <button type="submit" name="proses_bayar" class="btn-bayar" style="background: var(--green);">Bayar & Simpan Nota</button>
-                <button type="button" class="btn-batal" onclick="tutupModal()">Batalkan</button>
-            </form>
-        </div>
-    </div>
-
     <script>
-        function konfirmasiPembayaran() {
-            // Meminta konfirmasi sebelum membuka form
-            if(confirm('Apakah Anda yakin pesanan sudah sesuai dan ingin memproses pembayaran?')) {
-                document.getElementById('modalPembayaran').style.display = 'block';
-                // Otomatis fokus ke input uang agar kasir bisa langsung ngetik
-                setTimeout(() => document.getElementById('uangDiterima').focus(), 100);
+        let formTerbuka = false;
+
+        // Fungsi Membuka/Menutup Form Opsi
+        function toggleOpsi() {
+            let panel = document.getElementById('panelOpsi');
+            let btn = document.getElementById('btnToggle');
+            
+            formTerbuka = !formTerbuka;
+            
+            if (formTerbuka) {
+                panel.style.display = 'block';
+                btn.innerHTML = '<i class="fa-solid fa-chevron-up"></i> Tutup Form Opsi';
+                document.getElementById('uangDiterima').focus();
+            } else {
+                panel.style.display = 'none';
+                btn.innerHTML = '<i class="fa-solid fa-chevron-down"></i> Klik jika ada Diskon / Uang Pelanggan tidak pas';
+                // Reset isian jika ditutup
+                document.getElementById('diskonGlobal').value = '';
+                document.getElementById('uangDiterima').value = '';
+                kalkulasiUang();
             }
         }
 
-        function tutupModal() {
-            document.getElementById('modalPembayaran').style.display = 'none';
+        // Membersihkan angka dari text (untuk perhitungan)
+        function unformatRupiah(angka) { 
+            if(angka === "") return "";
+            return parseInt(angka.replace(/[^0-9]/g, '')) || 0; 
+        }
+
+        // Memberi titik otomatis (Format IDR)
+        function formatRupiah(angka) {
+            let number_string = angka.replace(/[^0-9]/g, '').toString();
+            let sisa = number_string.length % 3;
+            let rupiah = number_string.substr(0, sisa);
+            let ribuan = number_string.substr(sisa).match(/\d{3}/gi);
+
+            if (ribuan) {
+                let separator = sisa ? '.' : '';
+                rupiah += separator + ribuan.join('.');
+            }
+            return rupiah;
+        }
+
+        function formatDanHitung(input) {
+            input.value = formatRupiah(input.value);
+            kalkulasiUang();
         }
 
         function kalkulasiUang() {
             let totalAwal = parseInt(document.getElementById('totalAwal').value) || 0;
-            let diskon = parseInt(document.getElementById('diskonGlobal').value) || 0;
-            let uangDiterima = parseInt(document.getElementById('uangDiterima').value) || 0;
+            let valDiskon = document.getElementById('diskonGlobal').value;
+            let valUang = document.getElementById('uangDiterima').value;
 
+            let diskon = unformatRupiah(valDiskon) || 0;
+            
+            // Hitung Total Setelah Diskon
             let totalAkhir = totalAwal - diskon;
             if (totalAkhir < 0) totalAkhir = 0;
 
             document.getElementById('teksTotalAkhir').innerText = 'Rp ' + totalAkhir.toLocaleString('id-ID');
 
             let boxStatus = document.getElementById('boxStatus');
+            
+            // Jika kolom uang kosong, anggap uang pas
+            if (valUang === "") {
+                boxStatus.style.background = '#e8f8f5';
+                boxStatus.style.color = 'var(--green)';
+                boxStatus.innerHTML = '✅ Status: Uang Pas';
+                return;
+            }
+
+            let uangDiterima = unformatRupiah(valUang);
             let kembalian = uangDiterima - totalAkhir;
 
-            if (uangDiterima === 0) {
-                boxStatus.style.background = '#eee';
-                boxStatus.style.color = '#333';
-                boxStatus.innerHTML = 'Masukkan jumlah uang pelanggan.';
-            } else if (kembalian < 0) {
+            if (kembalian < 0) {
                 boxStatus.style.background = '#ffebee';
                 boxStatus.style.color = 'var(--red)';
                 boxStatus.innerHTML = '⚠️ KASBON / KURANG: Rp ' + Math.abs(kembalian).toLocaleString('id-ID');
@@ -470,31 +419,15 @@ $tanggal_indo = hari_indo(date("D")) . ', ' . tgl_full(date("Y-m-d"));
                 boxStatus.innerHTML = '✅ KEMBALIAN: Rp ' + kembalian.toLocaleString('id-ID');
             }
         }
-        
-        // Menutup modal jika area abu-abu di luar modal diklik
-        window.onclick = function(event) {
-            let modal = document.getElementById('modalPembayaran');
-            if (event.target == modal) {
-                tutupModal();
-            }
-        }
 
-        function konfirmasiPembayaran() {
-            if(confirm('Apakah Anda yakin pesanan sudah sesuai dan ingin memproses pembayaran?')) {
-                document.getElementById('modalPembayaran').style.display = 'block';
-                setTimeout(() => document.getElementById('uangDiterima').focus(), 100);
-            }
-        }
-
-        function tutupModal() {
-            document.getElementById('modalPembayaran').style.display = 'none';
-        }
-        
-        // Menutup modal jika area abu-abu di luar modal diklik
-        window.onclick = function(event) {
-            let modal = document.getElementById('modalPembayaran');
-            if (event.target == modal) {
-                tutupModal();
+        // Mencegah error input ke database
+        function bersihkanInputSebelumKirim() {
+            let d = document.getElementById('diskonGlobal');
+            let u = document.getElementById('uangDiterima');
+            d.value = unformatRupiah(d.value);
+            // Hanya bersihkan uang jika ada isinya, biarkan kosong jika memang uang pas
+            if(u.value !== "") {
+                u.value = unformatRupiah(u.value);
             }
         }
     </script>
