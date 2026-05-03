@@ -196,15 +196,59 @@ $tanggal_indo = hari_indo(date("D")) . ', ' . tgl_full(date("Y-m-d"));
             top: 20px;
             overflow: hidden;
         }
-        .cart-header { background: var(--primary); color: white; padding: 15px; text-align: center; font-weight: 600; }
-        .cart-items { max-height: 400px; overflow-y: auto; padding: 15px; }
+        .cart-header {
+         background: var(--primary);
+        color: white; 
+        padding: 15px; 
+        text-align: center; 
+        font-weight: 600; 
+        }
+        .cart-items {
+             max-height: 400px; 
+             overflow-y: auto; 
+             padding: 15px; 
+            }
         
-        .qty-control { display: flex; align-items: center; background: #f8f9fa; border-radius: 25px; padding: 2px 8px; border: 1px solid #eee; }
-        .qty-input { width: 45px; border: none; background: transparent; text-align: center; font-weight: bold; outline: none; }
-        .qty-control button { border: none; background: transparent; font-size: 1.2rem; cursor: pointer; padding: 0 8px; color: var(--primary); }
+        .qty-control { 
+            display: flex; 
+            align-items: center;
+            background: #f8f9fa; 
+            border-radius: 25px; 
+            padding: 2px 8px; 
+            border: 1px solid #eee;
+         }
+        .qty-input { 
+            width: 45px; 
+            border: none; 
+            background: transparent; 
+            text-align: center; 
+            font-weight: bold; 
+            outline: none; 
+        }
+        .qty-control button { 
+            border: none; 
+            background: transparent; 
+            font-size: 1.2rem; 
+            cursor: pointer; 
+            padding: 0 8px; 
+            color: var(--primary); }
         
-        .cart-footer { padding: 20px; background: #fafafa; border-top: 1px solid #eee; }
-        .btn-bayar { width: 100%; padding: 12px; border-radius: 10px; border: none; background: var(--green); color: white; font-weight: 600; cursor: pointer; font-size: 1rem; }
+        .cart-footer {
+             padding: 20px; 
+             background: #fafafa; 
+             border-top: 1px solid #eee; 
+            }
+        .btn-bayar { 
+            width: 100%; 
+            padding: 12px; 
+            border-radius: 10px; 
+            border: none; 
+            background: var(--green); 
+            color: white; 
+            font-weight: 600; 
+            cursor: pointer; 
+            font-size: 1rem; 
+        }
 
         @media (max-width: 1100px) { .main-grid { grid-template-columns: 1fr; } }
     </style>
@@ -256,7 +300,7 @@ $tanggal_indo = hari_indo(date("D")) . ', ' . tgl_full(date("Y-m-d"));
                         <h3 style="margin-bottom:10px; font-weight: 800; font-size: 1.1rem;"><?= htmlspecialchars($p['nama_produk']) ?></h3>
                         <span style="font-weight:800; color:var(--primary); font-size: 1rem;">Rp <?= number_format($p['harga_satuan'], 0, ',', '.') ?></span>
                         
-                        <span class="stok-info">Stok: <?= $p['stok'] ?></span>
+                        <br><span class="stok-info">Stok: <?= $p['stok'] ?></span>
                     </a>
                     <?php endwhile; ?>
                 </div>
