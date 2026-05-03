@@ -34,11 +34,15 @@ $q_varian = mysqli_query($koneksi, "SELECT COUNT(id_produk) as total_produk FROM
 $d_varian = mysqli_fetch_assoc($q_varian);
 $total_varian = $d_varian['total_produk'] ?? 0;
 
-// 6. GRAFIK: Cari nilai tertinggi untuk skala bar
+// 6. KARTU: Saldo Kas (Hitungan dari Buku Kas)
+$m = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT SUM(nominal) as t FROM buku_kas WHERE jenis='Pemasukan'"))['t'] ?? 0;
+$k = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT SUM(nominal) as t FROM buku_kas WHERE jenis='Pengeluaran'"))['t'] ?? 0;
+$saldo_kasir = $m - $k;
+
+// 7. GRAFIK: Cari nilai tertinggi untuk skala bar
 $q_max = mysqli_query($koneksi, "SELECT SUM(jumlah_produk) as max_jual FROM detail_transaksi GROUP BY id_produk ORDER BY max_jual DESC LIMIT 1");
 $d_max = mysqli_fetch_assoc($q_max);
 $max_terjual = $d_max['max_jual'] ?? 1;
-
 ?>
 
 <!doctype html>
@@ -51,81 +55,31 @@ $max_terjual = $d_max['max_jual'] ?? 1;
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="dashboard.css">
     <style>
-        /* Tambahan Style untuk Grid Baru */
-        .dashboard-container {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        /* Kartu Info Modern */
-        .baris-kotak {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 20px;
-            margin-bottom: 25px;
-        }
-        .kotak-info {
-            background: white;
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            border-left: 5px solid var(--cokelat-muda, #d4a373);
-        }
-        .kotak-info .ikon {
-            width: 50px;
-            height: 50px;
-            border-radius: 10px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.5em;
-            background: #fdf8f3;
-            color: var(--cokelat-muda, #d4a373);
-        }
+        .dashboard-container { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-top: 20px; }
+        .baris-kotak { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .kotak-info { background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 12px; border-left: 5px solid #d4a373; }
+        .kotak-info .ikon { width: 45px; height: 45px; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 1.2em; background: #fdf8f3; color: #d4a373; }
+        
+        /* Warna Khusus Saldo Kas */
+        .kotak-info.saldo { border-left-color: #27ae60; }
+        .kotak-info.saldo .ikon { color: #27ae60; background: #e8f8f5; }
+        
         .kotak-info.warning { border-left-color: #e74c3c; }
         .kotak-info.warning .ikon { color: #e74c3c; background: #fdf2f2; }
-
-        /* Tabel Sederhana */
-        .tabel-mini {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        .tabel-mini th {
-            text-align: left;
-            font-size: 0.8em;
-            color: #888;
-            padding: 10px 5px;
-            border-bottom: 1px solid #eee;
-        }
-        .tabel-mini td {
-            padding: 12px 5px;
-            border-bottom: 1px solid #f9f9f9;
-            font-size: 0.9em;
-        }
-        .badge {
-            padding: 4px 8px;
-            border-radius: 5px;
-            font-size: 0.75em;
-            font-weight: 600;
-        }
+        .label-kecil { font-size: 0.75em; color: #888; font-weight: 600; }
+        .angka-besar { font-weight: 800; color: #2d2424; font-size: 1.1em; }
+        .tabel-mini { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .tabel-mini th { text-align: left; font-size: 0.8em; color: #888; padding: 10px 5px; border-bottom: 1px solid #eee; }
+        .tabel-mini td { padding: 12px 5px; border-bottom: 1px solid #f9f9f9; font-size: 0.9em; }
+        .badge { padding: 4px 8px; border-radius: 5px; font-size: 0.75em; font-weight: 600; }
         .badge-danger { background: #f8d7da; color: #721c24; }
         .badge-success { background: #d4edda; color: #155724; }
-
-        @media (max-width: 992px) {
-            .dashboard-container { grid-template-columns: 1fr; }
-        }
+        @media (max-width: 992px) { .dashboard-container { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 
     <input type="checkbox" id="check-menu">
-
     <div class="bar-atas-mobile">
         <div class="nama-toko"><?= $nama_toko ?></div>
         <label for="check-menu" class="tombol-buka"><i class="fa-solid fa-bars"></i></label>
@@ -155,20 +109,30 @@ $max_terjual = $d_max['max_jual'] ?? 1;
         </header>
 
         <div class="baris-kotak">
+            <div class="kotak-info saldo">
+                <div class="ikon"><i class="fa-solid fa-money-bill-wave"></i></div>
+                <div>
+                    <div class="label-kecil">SALDO KAS (SAAT INI)</div>
+                    <div class="angka-besar">Rp <?= number_format($saldo_kasir, 0, ',', '.') ?></div>
+                </div>
+            </div>
+
             <div class="kotak-info">
                 <div class="ikon"><i class="fa-solid fa-wallet"></i></div>
                 <div>
-                    <div class="label-kecil">PENDAPATAN</div>
-                    <div class="angka-besar" style="font-size: 1.2em;">Rp <?= number_format($pendapatan_hari_ini, 0, ',', '.') ?></div>
+                    <div class="label-kecil">OMSET HARI INI</div>
+                    <div class="angka-besar">Rp <?= number_format($pendapatan_hari_ini, 0, ',', '.') ?></div>
                 </div>
             </div>
+
             <div class="kotak-info">
                 <div class="ikon"><i class="fa-solid fa-cart-shopping"></i></div>
                 <div>
                     <div class="label-kecil">TRANSAKSI</div>
-                    <div class="angka-besar"><?= $total_transaksi ?> <span>Pesanan</span></div>
+                    <div class="angka-besar"><?= $total_transaksi ?> <span>Nota</span></div>
                 </div>
             </div>
+
             <div class="kotak-info <?= ($total_stok_low > 0) ? 'warning' : '' ?>">
                 <div class="ikon"><i class="fa-solid fa-triangle-exclamation"></i></div>
                 <div>
@@ -176,19 +140,11 @@ $max_terjual = $d_max['max_jual'] ?? 1;
                     <div class="angka-besar"><?= $total_stok_low ?> <span>Produk</span></div>
                 </div>
             </div>
-            <div class="kotak-info">
-                <div class="ikon"><i class="fa-solid fa-box"></i></div>
-                <div>
-                    <div class="label-kecil">TOTAL VARIAN</div>
-                    <div class="angka-besar"><?= $total_varian ?> <span>Jenis</span></div>
-                </div>
-            </div>
         </div>
 
         <div class="dashboard-container">
-            
             <div class="kolom-kiri">
-                <div class="kotak-putih" style="margin-bottom: 20px;">
+                <div class="kotak-putih" style="margin-bottom: 20px; padding: 20px; background: white; border-radius: 15px;">
                     <h3 class="judul-sub">Grafik Unit Terjual</h3>
                     <div class="wadah-grafik">
                         <?php
@@ -197,15 +153,20 @@ $max_terjual = $d_max['max_jual'] ?? 1;
                             while($g = mysqli_fetch_assoc($query_grafik)):
                                 $persen = ($g['total_terjual'] / $max_terjual) * 100; 
                         ?>
-                        <div class="item-grafik">
-                            <div class="teks-grafik"><span><?= htmlspecialchars($g['nama_produk']) ?></span> <span><?= $g['total_terjual'] ?> Unit</span></div>
-                            <div class="jalur-bar"><div class="isi-bar" style="width: <?= $persen ?>%;"></div></div>
+                        <div class="item-grafik" style="margin-bottom:15px;">
+                            <div class="teks-grafik" style="display:flex; justify-content:space-between; font-size:0.9em; margin-bottom:5px;">
+                                <span><?= htmlspecialchars($g['nama_produk']) ?></span> 
+                                <strong><?= $g['total_terjual'] ?> Unit</strong>
+                            </div>
+                            <div class="jalur-bar" style="background:#eee; height:8px; border-radius:10px; overflow:hidden;">
+                                <div class="isi-bar" style="width: <?= $persen ?>%; background:#d4a373; height:100%;"></div>
+                            </div>
                         </div>
                         <?php endwhile; } else { echo "<p style='text-align:center; color:#888;'>Belum ada data.</p>"; } ?>
                     </div>
                 </div>
 
-                <div class="kotak-putih">
+                <div class="kotak-putih" style="padding: 20px; background: white; border-radius: 15px;">
                     <h3 class="judul-sub">Transaksi Terakhir</h3>
                     <table class="tabel-mini">
                         <thead>
@@ -234,15 +195,9 @@ $max_terjual = $d_max['max_jual'] ?? 1;
             </div>
 
             <div class="kolom-kanan">
-                <div class="kotak-putih" style="margin-bottom: 20px; border-top: 4px solid #e74c3c;">
-                    <h3 class="judul-sub">Peringatan Stok ⚠️</h3>
+                <div class="kotak-putih" style="margin-bottom: 20px; padding: 20px; background: white; border-radius: 15px; border-top: 4px solid #e74c3c;">
+                    <h3 class="judul-sub">Peringatan Stok </h3>
                     <table class="tabel-mini">
-                        <thead>
-                            <tr>
-                                <th>PRODUK</th>
-                                <th>SISA</th>
-                            </tr>
-                        </thead>
                         <tbody>
                             <?php
                             $q_list_stok = mysqli_query($koneksi, "SELECT nama_produk, stok FROM produk WHERE stok <= 10 ORDER BY stok ASC LIMIT 5");
@@ -251,30 +206,26 @@ $max_terjual = $d_max['max_jual'] ?? 1;
                             ?>
                             <tr>
                                 <td><?= htmlspecialchars($ls['nama_produk']) ?></td>
-                                <td><span class="badge badge-danger"><?= $ls['stok'] ?> Pcs</span></td>
+                                <td style="text-align:right;"><span class="badge badge-danger"><?= $ls['stok'] ?> Pcs</span></td>
                             </tr>
-                            <?php endwhile; } else { echo "<tr><td colspan='2' style='text-align:center; color:green;'>Stok aman semua ✅</td></tr>"; } ?>
+                            <?php endwhile; } else { echo "<tr><td colspan='2' style='text-align:center; color:green; padding:20px;'>Stok aman semua ✅</td></tr>"; } ?>
                         </tbody>
                     </table>
                 </div>
 
-                <div class="kotak-putih">
-                    <h3 class="judul-sub">Produk Terlaris 🏆</h3>
+                <div class="kotak-putih" style="padding: 20px; background: white; border-radius: 15px;">
+                    <h3 class="judul-sub">Produk Terlaris </h3>
                     <?php
                     $q_laris = mysqli_query($koneksi, "SELECT p.nama_produk, SUM(d.jumlah_produk) as total FROM detail_transaksi d JOIN produk p ON d.id_produk = p.id_produk GROUP BY d.id_produk ORDER BY total DESC LIMIT 3");
-                    $rank = 1;
                     while($l = mysqli_fetch_assoc($q_laris)):
                     ?>
-                    <div class="item-produk" style="padding: 10px 0;">
-                        <div class="info-produk">
-                            <h4 style="margin:0; font-size:0.9em;"><?= htmlspecialchars($l['nama_produk']) ?></h4>
-                            <p style="margin:0; font-size:0.8em; color:#888;"><?= $l['total'] ?> Unit Terjual</p>
-                        </div>
+                    <div style="border-bottom: 1px solid #eee; padding: 10px 0;">
+                        <h4 style="margin:0; font-size:0.9em;"><?= htmlspecialchars($l['nama_produk']) ?></h4>
+                        <p style="margin:0; font-size:0.8em; color:#888;"><?= $l['total'] ?> Unit Terjual</p>
                     </div>
                     <?php endwhile; ?>
                 </div>
             </div>
-
         </div>
     </main>
 

@@ -104,6 +104,7 @@ if(isset($_POST['proses_bayar'])) {
         // Masukkan ke tabel transaksi
         mysqli_query($koneksi, "INSERT INTO transaksi (tanggal_transaksi, total_pendapatan, status_transaksi, diskon_global, kurang_bayar) 
                                 VALUES ('$tgl', '$total_akhir', '$status_transaksi', '$diskon_global', '$kurang_bayar')");
+        
         $id_transaksi = mysqli_insert_id($koneksi);
 
         foreach($_SESSION['keranjang'] as $id_produk => $item) {
@@ -130,10 +131,13 @@ if(isset($_POST['proses_bayar'])) {
 
         if ($uang_masuk_kas > 0) {
             $keterangan = "Pendapatan Transaksi #" . $id_transaksi;
+            if ($status_transaksi == "Pending") {
+                $keterangan .= " (KASBON - Sisa: Rp ".number_format($kurang_bayar,0,',','.').")";
+            }
             mysqli_query($koneksi, "INSERT INTO buku_kas (tanggal, keterangan, jenis, nominal) 
                                     VALUES ('$tgl', '$keterangan', 'Pemasukan', '$uang_masuk_kas')");
         }
-        // =========================================================
+        
 
         unset($_SESSION['keranjang']);
         
@@ -149,7 +153,6 @@ if(isset($_POST['proses_bayar'])) {
 
 // =========================================================================
 // QUERY PENCARIAN 
-// =========================================================================
 $cari = isset($_GET['cari']) ? trim(mysqli_real_escape_string($koneksi, $_GET['cari'])) : '';
 $urut = isset($_GET['urut']) ? $_GET['urut'] : 'default';
 
@@ -232,6 +235,7 @@ $tanggal_indo = hari_indo(date("D")) . ', ' . tgl_full(date("Y-m-d"));
                 <a href="stok.php" class="link-menu"><i class="fa-solid fa-box"></i> Stok Barang</a>
                 <a href="buku_kas.php" class="link-menu"><i class="fa-solid fa-wallet"></i> Buku Kas</a>
                 <a href="laporan.php" class="link-menu"><i class="fa-solid fa-file-lines"></i> Laporan</a>
+                <a href="pengaturan.php" class="link-menu"><i class="fa-solid fa-gear"></i> <span>Pengaturan</span></a>
             </nav>
         </div>
         <div class="bagian-bawah">
