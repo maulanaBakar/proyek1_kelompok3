@@ -39,16 +39,25 @@ $k = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT SUM(nominal) as t FROM bu
 $saldo_sistem = $m - $k;
 
 // ==========================================
-// 1. LOGIKA BUKU KAS (Pemasukan/Pengeluaran)
+// 1. LOGIKA BUKU KAS (Pemasukan/Pengeluaran + Kategori)
 // ==========================================
 if(isset($_POST['simpan_kas'])) {
     $jenis = $_POST['jenis'];
-    $ket = mysqli_real_escape_string($koneksi, $_POST['keterangan']);
+    $kategori = isset($_POST['kategori']) ? $_POST['kategori'] : '';
+    $ket_asli = mysqli_real_escape_string($koneksi, $_POST['keterangan']);
+    
+    // Gabungkan Kategori ke Keterangan khusus untuk Pengeluaran
+    if ($jenis == 'Pengeluaran' && !empty($kategori)) {
+        $ket = "[$kategori] " . $ket_asli;
+    } else {
+        $ket = $ket_asli;
+    }
+
     $nom = (int)str_replace('.', '', $_POST['nominal']); 
     $tgl = date("Y-m-d H:i:s");
 
+    // Validasi Kanibal Modal (Cek Prive)
     $is_pribadi = stripos($ket, 'prive') !== false || stripos($ket, 'ambil') !== false || stripos($ket, 'jajan') !== false;
-    
     if($jenis == 'Pengeluaran' && $is_pribadi && $nom > $laba_hari_ini) {
         $_SESSION['warning_kanibal'] = "⚠️ STOP! Anda mengambil Rp ".number_format($nom)." padahal untung hari ini cuma Rp ".number_format($laba_hari_ini).". Anda memakan uang MODAL!";
     }
@@ -86,7 +95,7 @@ if(isset($_POST['bayar_hutang'])) {
 
     mysqli_query($koneksi, "UPDATE transaksi SET uang_diterima = '$bayar_baru', kurang_bayar = '$sisa_baru', status_bayar = '$status_baru' WHERE id_transaksi = '$id_trx'");
 
-    $ket_kas = "Bayar Hutang: $nama (TRX #$id_trx)";
+    $ket_kas = "[Pelunasan Piutang] $nama (TRX #$id_trx)";
     mysqli_query($koneksi, "INSERT INTO buku_kas (tanggal, keterangan, jenis, nominal) VALUES ('$tgl_sekarang', '$ket_kas', 'Pemasukan', '$jumlah_bayar')");
 
     echo "<script>alert('Pembayaran berhasil dicatat!'); window.location='buku_kas.php?tab=piutang';</script>";
@@ -118,7 +127,7 @@ $tab = isset($_GET['tab']) ? $_GET['tab'] : 'kas';
     <title>Keuangan - 2 PAKSI</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="css/dashboard.css">
     <style>
         /* Styling Tabs & Alert */
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; white-space: nowrap; padding-bottom: 5px; }
@@ -205,16 +214,27 @@ $tab = isset($_GET['tab']) ? $_GET['tab'] : 'kas';
         <div class="kotak-putih" style="height: fit-content;">
             <h3 class="judul-sub" style="margin-top: 0;">Catat Transaksi</h3>
             <form method="POST">
-                <label style="font-size: 0.85em; font-weight: bold; display: block; margin-bottom: 5px;">Jenis</label>
-                <select name="jenis" class="input-kasir">
-                    <option value="Pemasukan">Pemasukan (Termasuk Modal Awal)</option>
-                    <option value="Pengeluaran">Pengeluaran (Belanja/Prive)</option>
+                <label style="font-size: 0.85em; font-weight: bold; display: block; margin-bottom: 5px;">Jenis Uang</label>
+                <select name="jenis" id="jenisKas" class="input-kasir" onchange="toggleKategori()" style="border-color: #3498db;">
+                    <option value="Pemasukan">Pemasukan (Modal Masuk/dll)</option>
+                    <option value="Pengeluaran" selected>Pengeluaran (Uang Keluar Laci)</option>
                 </select>
 
-                <label style="font-size: 0.85em; font-weight: bold; display: block; margin-bottom: 5px;">Keterangan</label>
-                <input type="text" name="keterangan" class="input-kasir" required placeholder="Cth: Prive, Modal Awal, Beli Kantong">
+                <div id="boxKategori" style="display: block;">
+                    <label style="font-size: 0.85em; font-weight: bold; display: block; margin-bottom: 5px;">Kategori Pengeluaran</label>
+                    <select name="kategori" class="input-kasir" style="background: #fdfbf7;">
+                        <option value="Belanja Stok">🛒 Belanja Stok (Kulakan / Supplier)</option>
+                        <option value="Operasional">⚡ Operasional (Listrik, Karyawan, WiFi)</option>
+                        <option value="Perlengkapan">📦 Perlengkapan (Plastik, ATK, Sapu)</option>
+                        <option value="Prive">👤 Prive (Ambilan Pribadi / Owner)</option>
+                        <option value="Lainnya">Lainnya...</option>
+                    </select>
+                </div>
 
-                <label style="font-size: 0.85em; font-weight: bold; display: block; margin-bottom: 5px;">Nominal (Rp)</label>
+                <label style="font-size: 0.85em; font-weight: bold; display: block; margin-bottom: 5px;">Keterangan / Rincian</label>
+                <input type="text" name="keterangan" class="input-kasir" required placeholder="Cth: Beli plastik 3 pack">
+
+                <label style="font-size: 0.85em; font-weight: bold; display: block; margin-bottom: 5px;">Nominal Uang (Rp)</label>
                 <input type="text" name="nominal" class="input-kasir" onkeyup="formatRp(this)" required>
 
                 <button type="submit" name="simpan_kas" style="width: 100%; padding: 12px; background: var(--cokelat-tua); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">Simpan Data</button>
@@ -240,7 +260,7 @@ $tab = isset($_GET['tab']) ? $_GET['tab'] : 'kas';
                         $isM = $row['jenis'] == 'Pemasukan';
                     ?>
                     <tr style="border-bottom: 1px solid #f5f5f5;">
-                        <td style="padding: 10px;"><?= date('d/m/Y H:i', strtotime($row['tanggal'])) ?></td>
+                        <td style="padding: 10px; font-size:0.9em;"><?= date('d/m/y H:i', strtotime($row['tanggal'])) ?></td>
                         <td style="padding: 10px;"><strong><?= htmlspecialchars($row['keterangan']) ?></strong></td>
                         <td style="padding: 10px;"><span class="<?= $isM ? 'badge-pemasukan' : 'badge-pengeluaran' ?>"><?= $row['jenis'] ?></span></td>
                         <td style="padding: 10px; text-align: right; color: <?= $isM ? '#27ae60' : '#e74c3c' ?>; font-weight: bold;">
@@ -385,6 +405,21 @@ $tab = isset($_GET['tab']) ? $_GET['tab'] : 'kas';
 </div>
 
 <script>
+// Logic memunculkan Kategori jika Pengeluaran
+function toggleKategori() {
+    let jenis = document.getElementById('jenisKas').value;
+    if(jenis === 'Pengeluaran') {
+        document.getElementById('boxKategori').style.display = 'block';
+    } else {
+        document.getElementById('boxKategori').style.display = 'none';
+    }
+}
+// Jalankan fungsi satu kali saat halaman dimuat (agar sinkron)
+window.onload = function() {
+    let jenisElem = document.getElementById('jenisKas');
+    if(jenisElem) toggleKategori();
+}
+
 // Format Rupiah standar
 function formatRp(obj){
     let val = obj.value.replace(/[^,\d]/g, "").toString();
@@ -399,17 +434,15 @@ function formatRp(obj){
     obj.value = idr;
 }
 
-// Menghilangkan titik dari string rupiah untuk kalkulasi JS
 function unformatRp(str) {
     return parseInt(str.replace(/\./g, '')) || 0;
 }
 
-// Logika Hitung Selisih Otomatis di Tab Closing
 function hitungSelisih() {
     let inputFisik = document.getElementById('fisikLaci');
-    if (!inputFisik) return; // Mencegah error jika bukan di tab closing
+    if (!inputFisik) return; 
 
-    formatRp(inputFisik); // Format angka saat diketik
+    formatRp(inputFisik); 
 
     let saldoSistem = <?= $saldo_sistem ?>; 
     let saldoFisik = unformatRp(inputFisik.value);
@@ -435,7 +468,6 @@ function hitungSelisih() {
     }
 }
 
-// Logika Modal Piutang
 function bukaModal(id, nama, sisa){
     document.getElementById('mId').value = id;
     document.getElementById('teksInfo').innerText = "Pelanggan: " + nama + " (Sisa: Rp " + parseInt(sisa).toLocaleString('id-ID') + ")";

@@ -11,219 +11,223 @@ if($_SESSION['status'] != "login"){
 if(!isset($_SESSION['keranjang'])) {
     $_SESSION['keranjang'] = [];
 }
-
-// Logika Tambah Keranjang
-if(isset($_GET['aksi']) && $_GET['aksi'] == "tambah") {
-    $id = $_GET['id_produk'];
-    $data = mysqli_query($koneksi, "SELECT * FROM produk WHERE id_produk='$id'");
-    $p = mysqli_fetch_assoc($data);
-
-    if($p) {
-        if(isset($_SESSION['keranjang'][$id])) {
-            if ($_SESSION['keranjang'][$id]['qty'] + 1 <= $p['stok']) {
-                $_SESSION['keranjang'][$id]['qty'] += 1;
-            } else {
-                echo "<script>alert('Stok tidak mencukupi!'); window.location='kasir.php';</script>";
-                exit();
-            }
-        } else {
-            $_SESSION['keranjang'][$id] = [
-                'nama'   => $p['nama_produk'],
-                'harga'  => $p['harga_satuan'],
-                'qty'    => 1,
-                'diskon' => $p['diskon'] ?? 0
-            ];
-        }
-    }
-    header("location:kasir.php"); 
-    exit();
+// Inisialisasi Session untuk Hold Transaksi
+if(!isset($_SESSION['hold_keranjang'])) {
+    $_SESSION['hold_keranjang'] = [];
 }
 
-// Logika Update Qty
-if(isset($_POST['update_qty'])) {
-    $id = $_POST['id_produk'];
-    $qty = (int)$_POST['qty'];
-    
-    if($qty <= 0) {
-        unset($_SESSION['keranjang'][$id]);
-    } else {
-        $data = mysqli_query($koneksi, "SELECT stok FROM produk WHERE id_produk='$id'");
+// ==========================================
+// LOGIKA KERANJANG BELANJA
+// ==========================================
+if(isset($_GET['aksi'])) {
+    $aksi = $_GET['aksi'];
+    $id = $_GET['id_produk'] ?? '';
+
+    if($aksi == "tambah") {
+        $data = mysqli_query($koneksi, "SELECT * FROM produk WHERE id_produk='$id'");
         $p = mysqli_fetch_assoc($data);
 
-        if($qty > $p['stok']) {
-            echo "<script>alert('Qty melebihi stok! Maksimal: ".$p['stok']."'); window.location='kasir.php';</script>";
-            exit();
+        if($p) {
+            if(isset($_SESSION['keranjang'][$id])) {
+                if ($_SESSION['keranjang'][$id]['qty'] + 1 <= $p['stok']) {
+                    $_SESSION['keranjang'][$id]['qty'] += 1;
+                } else {
+                    echo "<script>alert('Stok tidak mencukupi!'); window.location='kasir.php';</script>";
+                    exit();
+                }
+            } else {
+                $_SESSION['keranjang'][$id] = [
+                    'nama'   => $p['nama_produk'],
+                    'harga'  => $p['harga_satuan'],
+                    'qty'    => 1,
+                    'modal'  => ($p['jenis_produk'] == 'Luar') ? $p['modal'] : $p['hpp'] // Untuk cek rugi
+                ];
+            }
+        }
+        header("location:kasir.php"); exit;
+    }
+    
+    elseif($aksi == "plus") {
+        $data = mysqli_query($koneksi, "SELECT stok FROM produk WHERE id_produk='$id'");
+        $p = mysqli_fetch_assoc($data);
+        if ($_SESSION['keranjang'][$id]['qty'] + 1 <= $p['stok']) {
+            $_SESSION['keranjang'][$id]['qty'] += 1;
         } else {
-            $_SESSION['keranjang'][$id]['qty'] = $qty;
+            echo "<script>alert('Stok mentok bro!'); window.location='kasir.php';</script>";
+            exit;
+        }
+        header("location:kasir.php"); exit;
+    }
+    
+    elseif($aksi == "min") {
+        if($_SESSION['keranjang'][$id]['qty'] > 1) {
+            $_SESSION['keranjang'][$id]['qty'] -= 1;
+        } else {
+            unset($_SESSION['keranjang'][$id]);
+        }
+        header("location:kasir.php"); exit;
+    }
+    
+    elseif($aksi == "hapus") {
+        unset($_SESSION['keranjang'][$id]);
+        header("location:kasir.php"); exit;
+    }
+    
+    elseif($aksi == "clear") {
+        $_SESSION['keranjang'] = [];
+        header("location:kasir.php"); exit;
+    }
+
+    // ==========================================
+    // LOGIKA HOLD (TAHAN) & LOAD TRANSAKSI
+    // ==========================================
+    elseif($aksi == "load_hold") {
+        $id_hold = $_GET['id_hold'];
+        if(isset($_SESSION['hold_keranjang'][$id_hold])) {
+            // Kosongkan keranjang saat ini, ganti dengan yang di-hold
+            $_SESSION['keranjang'] = $_SESSION['hold_keranjang'][$id_hold]['keranjang'];
+            unset($_SESSION['hold_keranjang'][$id_hold]); // Hapus dari daftar hold
+            echo "<script>alert('Berhasil! Transaksi dilanjutkan.'); window.location='kasir.php';</script>";
+            exit;
         }
     }
-    header("location:kasir.php");
-    exit();
+    
+    elseif($aksi == "hapus_hold") {
+        $id_hold = $_GET['id_hold'];
+        unset($_SESSION['hold_keranjang'][$id_hold]);
+        header("location:kasir.php"); exit;
+    }
 }
 
-// Logika Hapus Item
-if(isset($_GET['aksi']) && $_GET['aksi'] == "hapus") {
-    $id = $_GET['id_produk'];
-    unset($_SESSION['keranjang'][$id]);
-    header("location:kasir.php");
-    exit();
+// PROSES SIMPAN KE HOLD
+if (isset($_POST['proses_hold'])) {
+    if (!empty($_SESSION['keranjang'])) {
+        $nama_pelanggan_hold = trim($_POST['nama_pelanggan_hold']);
+        if (empty($nama_pelanggan_hold)) $nama_pelanggan_hold = "Tamu " . date('H:i');
+        
+        $id_hold = time(); // Bikin ID unik pakai waktu
+        $_SESSION['hold_keranjang'][$id_hold] = [
+            'nama' => $nama_pelanggan_hold,
+            'waktu' => date('H:i:s'),
+            'keranjang' => $_SESSION['keranjang']
+        ];
+        
+        $_SESSION['keranjang'] = []; // Kosongkan layar kasir
+        echo "<script>alert('Sip! Transaksi atas nama $nama_pelanggan_hold ditahan.'); window.location='kasir.php';</script>";
+        exit;
+    }
 }
 
-// =========================================================================
-// FASE 5: LOGIKA PROSES BAYAR & KASBON
-// =========================================================================
-if(isset($_POST['proses_bayar'])) {
-    if(!empty($_SESSION['keranjang'])) {
-        
-        $total_awal    = (int)$_POST['total_awal'];
-        $diskon_global = (int)($_POST['diskon_global'] ?? 0);
-        
-        // Data Tambahan dari Form (Fase 5)
-        $nama_pelanggan_raw = mysqli_real_escape_string($koneksi, $_POST['nama_pelanggan'] ?? '');
-        $nama_pelanggan = empty(trim($nama_pelanggan_raw)) ? "UMUM" : $nama_pelanggan_raw; 
+// ==========================================
+// PROSES BAYAR (CHECKOUT)
+// ==========================================
+if(isset($_POST['bayar'])) {
+    if(empty($_SESSION['keranjang'])) {
+        echo "<script>alert('Keranjang masih kosong!'); window.location='kasir.php';</script>";
+        exit;
+    }
 
-        // Hitung total setelah diskon
-        $total_akhir = $total_awal - $diskon_global;
-        if($total_akhir < 0) $total_akhir = 0;
+    $nama_pelanggan = mysqli_real_escape_string($koneksi, $_POST['nama_pelanggan']);
+    $diskon_global  = (int)str_replace('.', '', $_POST['diskon_global']);
+    $uang_diterima  = (int)str_replace('.', '', $_POST['uang_diterima']);
+    $tanggal        = date("Y-m-d H:i:s");
 
-        // Logika Uang Pas & Deteksi Kasbon
-        $uang_diterima_raw = $_POST['uang_diterima'] ?? '';
-        if(trim($uang_diterima_raw) === '') {
-            $uang_diterima = $total_akhir; // Dianggap Pas
-        } else {
-            $uang_diterima = (int)str_replace('.', '', $uang_diterima_raw); 
-        }
+    $total_belanja  = 0;
+    foreach($_SESSION['keranjang'] as $item) {
+        $total_belanja += ($item['harga'] * $item['qty']);
+    }
 
-        $kurang_bayar = 0;
-        $status_bayar = 'Lunas';
+    $grand_total = $total_belanja - $diskon_global;
+    if($grand_total < 0) $grand_total = 0;
 
-        // Deteksi apakah uangnya kurang (Skenario Kasbon yang Sebenarnya)
-        if($uang_diterima < $total_akhir) {
-            $kurang_bayar = $total_akhir - $uang_diterima;
-            $status_bayar = 'Kasbon';
-        }
+    $kembalian = $uang_diterima - $grand_total;
+    $status_transaksi = ($kembalian < 0) ? 'Kasbon' : 'Lunas';
 
-        $tgl = date("Y-m-d H:i:s");
-
-        // INSERT KE TABEL TRANSAKSI (Sesuai Kolom Baru Fase 5)
-        // Kita menggunakan "Lunas" / "Kasbon" di kolom status_bayar
-        mysqli_query($koneksi, "INSERT INTO transaksi 
-            (tanggal_transaksi, nama_pelanggan, total_pendapatan, uang_diterima, status_bayar, status_transaksi, diskon_global, kurang_bayar) 
-            VALUES 
-            ('$tgl', '$nama_pelanggan', '$total_akhir', '$uang_diterima', '$status_bayar', 'Selesai', '$diskon_global', '$kurang_bayar')");
-        
+    // Insert ke tabel transaksi
+    $query_transaksi = "INSERT INTO transaksi (tanggal_transaksi, nama_pelanggan, total_pendapatan, uang_diterima, diskon, status) 
+                        VALUES ('$tanggal', '$nama_pelanggan', '$grand_total', '$uang_diterima', '$diskon_global', '$status_transaksi')";
+    
+    if(mysqli_query($koneksi, $query_transaksi)) {
         $id_transaksi = mysqli_insert_id($koneksi);
 
+        // Insert ke detail_transaksi & kurangi stok
         foreach($_SESSION['keranjang'] as $id_produk => $item) {
             $qty = $item['qty'];
-            $diskon = $item['diskon'] ?? 0;
-            $harga_final = $item['harga'] - ($item['harga'] * $diskon / 100);
-            $subtotal = $harga_final * $qty;
+            $subtotal = $item['harga'] * $qty;
 
-            $cek_p = mysqli_query($koneksi, "SELECT jenis_produk, modal, hpp FROM produk WHERE id_produk = '$id_produk'");
-            $data_p = mysqli_fetch_assoc($cek_p);
+            mysqli_query($koneksi, "INSERT INTO detail_transaksi (id_transaksi, id_produk, jumlah_produk, subtotal) 
+                                    VALUES ('$id_transaksi', '$id_produk', '$qty', '$subtotal')");
             
-            $modal_terkini = ($data_p['jenis_produk'] == 'Luar') ? $data_p['modal'] : $data_p['hpp'];
-
-            mysqli_query($koneksi, "INSERT INTO detail_transaksi (id_transaksi, id_produk, jumlah_produk, subtotal, modal_satuan) 
-                                   VALUES ('$id_transaksi', '$id_produk', '$qty', '$subtotal', '$modal_terkini')");
-
+            // Kurangi stok
             mysqli_query($koneksi, "UPDATE produk SET stok = stok - $qty WHERE id_produk = '$id_produk'");
         }
 
-        // PENCATATAN KE BUKU KAS (Hanya yang diterima di hari itu)
-        $uang_masuk_kas = ($uang_diterima < $total_akhir) ? $uang_diterima : $total_akhir;
-
-        if ($uang_masuk_kas > 0) {
-            $keterangan = "TRX #" . $id_transaksi;
-            if ($nama_pelanggan != "UMUM") {
-                $keterangan .= " ($nama_pelanggan)";
-            }
-            if ($status_bayar == "Kasbon") {
-                $keterangan .= " [DP KASBON]";
-            }
-            mysqli_query($koneksi, "INSERT INTO buku_kas (tanggal, keterangan, jenis, nominal) 
-                                    VALUES ('$tgl', '$keterangan', 'Pemasukan', '$uang_masuk_kas')");
-        }
-
-        unset($_SESSION['keranjang']);
+        $_SESSION['keranjang'] = []; // Bersihkan keranjang
         
-        // Notifikasi setelah transaksi
-        if($status_bayar == 'Kasbon') {
-            echo "<script>alert('Berhasil! KASBON a.n $nama_pelanggan tercatat. (Sisa: Rp ".number_format($kurang_bayar,0,',','.').")'); window.location='kasir.php';</script>";
-        } else {
-            echo "<script>alert('Pembayaran Lunas Berhasil!'); window.location='kasir.php';</script>";
-        }
-        exit();
+        $pesan = ($status_transaksi == 'Kasbon') ? "Transaksi KASBON tersimpan!" : "Pembayaran LUNAS Berhasil!";
+        echo "<script>alert('$pesan'); window.open('cetak_struk.php?id=$id_transaksi', '_blank'); window.location='kasir.php';</script>";
+        exit;
+    } else {
+        echo "<script>alert('Gagal menyimpan transaksi!'); window.location='kasir.php';</script>";
     }
 }
-
-// =========================================================================
-// QUERY PENCARIAN 
-$cari = isset($_GET['cari']) ? trim(mysqli_real_escape_string($koneksi, $_GET['cari'])) : '';
-$urut = isset($_GET['urut']) ? $_GET['urut'] : 'default';
-
-$sql = "SELECT * FROM produk WHERE stok > 0 AND status_aktif = 'Y'";
-if ($cari != "") {
-    $sql .= " AND (nama_produk LIKE '%$cari%')";
-}
-
-if ($urut == "stok_kecil") {
-    $sql .= " ORDER BY CAST(stok AS UNSIGNED) ASC";
-} elseif ($urut == "stok_besar") {
-    $sql .= " ORDER BY CAST(stok AS UNSIGNED) DESC";
-} else {
-    $sql .= " ORDER BY id_produk DESC";
-}
-
-$tanggal_indo = hari_indo(date("D")) . ', ' . tgl_full(date("Y-m-d"));
 ?>
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Kasir - 2 PAKSI</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet" />
+    <title>Kasir Pintar | 2 Paksi</title>
     <link rel="stylesheet" href="css/dashboard.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #4a3e3d; --accent: #d6c4b0; --bg-body: #fdfbf7; --text-main: #2d2424; --green: #27ae60; --red: #e74c3c; }
-        .main-grid { display: grid; grid-template-columns: 1fr 400px; gap: 25px; align-items: start; }
-        .produk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
-        .card-produk { background: white; padding: 25px 20px; border-radius: 15px; text-align: center; text-decoration: none; color: inherit; border: 1px solid #f1f2f6; transition: 0.3s; }
-        .card-produk:hover { border-color: var(--accent); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
-        .stok-info { font-size: 0.8rem; font-weight: 600; margin-top: 15px; color: #e67e22; background: #fff5eb; padding: 6px 15px; border-radius: 50px; display: block; width: fit-content; margin-left: auto; margin-right: auto; }
+        .layout-kasir { display: grid; grid-template-columns: 60% 40%; gap: 20px; height: calc(100vh - 80px); }
+        .kiri-produk { background: white; border-radius: 12px; padding: 20px; overflow-y: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .kanan-keranjang { background: white; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         
-        .cart-panel { background: white; border-radius: 15px; border: 1px solid #f1f2f6; position: sticky; top: 20px; overflow: hidden; }
-        .cart-header { background: var(--primary); color: white; padding: 15px; text-align: center; font-weight: 600; }
-        .cart-items { max-height: 400px; overflow-y: auto; padding: 15px; }
+        .grid-produk { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; margin-top: 15px; }
+        .card-produk { border: 1px solid #eee; border-radius: 8px; padding: 15px; text-align: center; cursor: pointer; transition: 0.2s; background: #fff; }
+        .card-produk:hover { border-color: var(--cokelat-muda); transform: translateY(-3px); box-shadow: 0 5px 15px rgba(212,163,115,0.2); }
+        .card-produk h4 { margin: 0 0 5px 0; font-size: 0.95em; color: #333; }
+        .card-produk p { margin: 0; color: var(--cokelat-tua); font-weight: bold; }
+        .stok-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.75em; margin-top: 8px; background: #e8f8f5; color: #27ae60; }
+        .stok-habis { background: #fdedec; color: #e74c3c; cursor: not-allowed; opacity: 0.6; }
+
+        .list-keranjang { flex: 1; overflow-y: auto; border-bottom: 2px dashed #eee; padding-bottom: 10px; margin-bottom: 15px; }
+        .item-keranjang { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f9f9f9; }
+        .item-info h5 { margin: 0; font-size: 0.95em; }
+        .item-info p { margin: 0; font-size: 0.85em; color: #666; }
+        .qty-control { display: flex; align-items: center; gap: 10px; }
+        .qty-control a { text-decoration: none; width: 25px; height: 25px; display: flex; justify-content: center; align-items: center; background: #f1f1f1; border-radius: 4px; color: #333; font-weight: bold; }
+        .qty-control a:hover { background: var(--cokelat-muda); color: white; }
+
+        .total-area { background: #f9f9f9; padding: 15px; border-radius: 8px; }
+        .baris-total { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9em; }
+        .baris-grand { font-size: 1.3em; font-weight: bold; color: var(--cokelat-tua); border-top: 2px dashed #ccc; padding-top: 10px; margin-top: 5px; }
         
-        .qty-control { display: flex; align-items: center; background: #f8f9fa; border-radius: 25px; padding: 2px 8px; border: 1px solid #eee; }
-        .qty-input { width: 45px; border: none; background: transparent; text-align: center; font-weight: bold; outline: none; }
-        .qty-control button { border: none; background: transparent; font-size: 1.2rem; cursor: pointer; padding: 0 8px; color: var(--primary); }
-        
-        .cart-footer { padding: 20px; background: #fafafa; border-top: 1px solid #eee; }
-        
-        .btn-bayar { width: 100%; padding: 14px; border-radius: 10px; border: none; background: var(--green); color: white; font-weight: 800; cursor: pointer; font-size: 1.1rem; margin-top: 5px; transition: 0.2s;}
+        .input-kasir { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 6px; font-family: inherit; font-size: 1em; }
+        .btn-bayar { width: 100%; padding: 15px; background: #27ae60; color: white; border: none; border-radius: 8px; font-size: 1.1em; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s;}
         .btn-bayar:hover { background: #219653; }
-        .btn-bayar:disabled { background: #ccc; cursor: not-allowed; }
-
-        .btn-opsi { width: 100%; padding: 10px; border-radius: 8px; border: 1px dashed #ccc; background: #fff; color: #666; font-weight: 600; cursor: pointer; font-size: 0.9rem; transition: 0.2s; margin-bottom: 10px;}
-        .btn-opsi:hover { background: #f1f2f6; color: var(--primary); border-color: var(--primary); }
         
-        .panel-opsi { background: #fff; border: 1px solid #eee; border-radius: 10px; padding: 15px; margin-bottom: 15px; display: none; }
-        .input-kasir { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-weight: bold; font-family: inherit; box-sizing: border-box; transition: 0.3s;}
-        .input-kasir:focus { border-color: var(--accent); outline: none; }
-        
-        .status-box { padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 0.9em; margin-top: 10px; transition: 0.3s; }
+        .box-warning { padding: 10px; border-radius: 6px; text-align: center; font-weight: bold; margin-bottom: 10px; }
+        .rugi { background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
+        .untung { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
 
-        @media (max-width: 1100px) { .main-grid { grid-template-columns: 1fr; } }
+        .aksi-tambahan { display: flex; gap: 10px; margin-top: 10px; }
+        .btn-tahan { flex: 1; padding: 10px; background: #f39c12; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; text-align: center; text-decoration: none;}
+        .btn-kosong { flex: 1; padding: 10px; background: #e74c3c; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; text-align: center; text-decoration: none;}
+        
+        .badge-hold { background: #f39c12; color: white; padding: 5px 10px; border-radius: 20px; font-size: 0.8em; text-decoration: none; font-weight: bold; float: right; cursor: pointer;}
+        .badge-hold:hover { background: #d68910; }
+
+        /* Modal Styles */
+        .modal-bg { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-konten { background: white; padding: 20px; border-radius: 10px; width: 400px; max-width: 90%; }
+        .tabel-hold { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .tabel-hold th, .tabel-hold td { border: 1px solid #ddd; padding: 8px; text-align: left; }
     </style>
 </head>
 <body>
-
     <input type="checkbox" id="check-menu">
     <div class="bar-atas-mobile">
         <div class="nama-toko">2 PAKSI</div>
@@ -248,215 +252,271 @@ $tanggal_indo = hari_indo(date("D")) . ', ' . tgl_full(date("Y-m-d"));
     </aside>
 
     <main class="isi-halaman">
-        <header class="judul-halaman">
-            <h1>Kasir Penjualan</h1>
-            <p style="color: #888;"><?= $tanggal_indo ?></p>
-        </header>
-
-        <div class="main-grid">
-            <div class="produk-section">
-                <form action="" method="GET" style="display:flex; gap:10px; margin-bottom:20px;">
-                    <input type="text" name="cari" class="search-input" placeholder="Cari produk..." value="<?= htmlspecialchars($cari) ?>" style="flex:1; padding:12px; border-radius:10px; border:1px solid #ddd;">
-                    <button type="submit" class="btn-bayar" style="width:auto; padding:0 25px; margin-top:0; background:var(--primary);">Cari</button>
-                </form>
-
-                <div class="produk-grid">
-                    <?php 
-                    $res = mysqli_query($koneksi, $sql);
-                    while($p = mysqli_fetch_assoc($res)): 
+        <div class="layout-kasir">
+            
+            <div class="kiri-produk">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3>Pilih Produk</h3>
+                    <input type="text" id="cariProduk" placeholder="Cari nama..." style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+                </div>
+                
+                <div class="grid-produk" id="wadahProduk">
+                    <?php
+                    $q_produk = mysqli_query($koneksi, "SELECT * FROM produk WHERE status_aktif='Y' ORDER BY nama_produk ASC");
+                    while($p = mysqli_fetch_assoc($q_produk)):
+                        $habis = ($p['stok'] <= 0);
                     ?>
-                    <a href="?aksi=tambah&id_produk=<?= $p['id_produk'] ?>" class="card-produk">
-                        <h3 style="margin-bottom:10px; font-weight: 800; font-size: 1.1rem;"><?= htmlspecialchars($p['nama_produk']) ?></h3>
-                        <span style="font-weight:800; color:var(--primary); font-size: 1rem;">Rp <?= number_format($p['harga_satuan'], 0, ',', '.') ?></span>
-                        <span class="stok-info">Stok: <?= $p['stok'] ?></span>
-                    </a>
+                    <div class="card-produk <?= $habis ? 'stok-habis' : '' ?>" 
+                         <?= $habis ? '' : "onclick=\"window.location='kasir.php?aksi=tambah&id_produk={$p['id_produk']}'\"" ?>>
+                        <h4><?= htmlspecialchars($p['nama_produk']) ?></h4>
+                        <p>Rp <?= number_format($p['harga_satuan'],0,',','.') ?></p>
+                        <span class="stok-badge <?= $habis ? 'stok-habis' : '' ?>">Sisa: <?= $p['stok'] ?></span>
+                    </div>
                     <?php endwhile; ?>
                 </div>
             </div>
 
-            <div class="cart-panel">
-                <div class="cart-header">Keranjang Kasir</div>
-                <div class="cart-items">
+            <div class="kanan-keranjang">
+                <h3 style="margin-top: 0;">
+                    Keranjang Belanja
+                    <?php if(count($_SESSION['hold_keranjang']) > 0): ?>
+                        <span class="badge-hold" onclick="bukaModalDaftarHold()">
+                            <i class="fa-solid fa-hand-holding"></i> Ada <?= count($_SESSION['hold_keranjang']) ?> Hold
+                        </span>
+                    <?php endif; ?>
+                </h3>
+                
+                <div class="list-keranjang">
                     <?php 
                     $total = 0;
-                    foreach($_SESSION['keranjang'] as $id => $item): 
-                        $harga_final = $item['harga'] - ($item['harga'] * ($item['diskon'] ?? 0) / 100);
-                        $sub = $harga_final * $item['qty'];
-                        $total += $sub;
+                    $total_modal = 0; // Untuk cek kerugian
+                    if(empty($_SESSION['keranjang'])): ?>
+                        <div style="text-align: center; color: #999; margin-top: 50px;">
+                            <i class="fa-solid fa-cart-shopping" style="font-size: 3em; margin-bottom: 10px;"></i>
+                            <p>Keranjang masih kosong</p>
+                        </div>
+                    <?php else: 
+                        foreach($_SESSION['keranjang'] as $id => $item): 
+                            $subtotal = $item['harga'] * $item['qty'];
+                            $submodal = $item['modal'] * $item['qty'];
+                            $total += $subtotal;
+                            $total_modal += $submodal;
                     ?>
-                        <div style="border-bottom:1px solid #eee; padding-bottom:15px; margin-bottom:15px;">
-                            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                                <span style="font-weight:600;"><?= htmlspecialchars($item['nama']) ?></span>
-                                <span style="font-weight:800;">Rp <?= number_format($sub, 0, ',', '.') ?></span>
+                        <div class="item-keranjang">
+                            <div class="item-info">
+                                <h5><?= $item['nama'] ?></h5>
+                                <p>Rp <?= number_format($item['harga'],0,',','.') ?></p>
                             </div>
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <form method="POST" class="qty-control">
-                                    <input type="hidden" name="id_produk" value="<?= $id ?>">
-                                    <button type="button" onclick="let q = this.nextElementSibling; if(parseInt(q.value) > 1){ q.stepDown(); this.form.submit(); } else { if(confirm('Hapus item?')){ q.value=0; this.form.submit(); } }">-</button>
-                                    <input type="number" name="qty" class="qty-input" value="<?= $item['qty'] ?>" onchange="this.form.submit()">
-                                    <button type="button" onclick="this.previousElementSibling.stepUp(); this.form.submit();">+</button>
-                                    <input type="hidden" name="update_qty" value="1">
-                                </form>
-                                <a href="?aksi=hapus&id_produk=<?= $id ?>" style="color:var(--red);"><i class="fa-solid fa-trash"></i></a>
+                            <div class="qty-control">
+                                <a href="kasir.php?aksi=min&id_produk=<?= $id ?>">-</a>
+                                <span><?= $item['qty'] ?></span>
+                                <a href="kasir.php?aksi=plus&id_produk=<?= $id ?>">+</a>
+                                <a href="kasir.php?aksi=hapus&id_produk=<?= $id ?>" style="background: #ffcccc; color: #e74c3c;"><i class="fa-solid fa-trash"></i></a>
                             </div>
                         </div>
-                    <?php endforeach; ?>
-                    <?php if(empty($_SESSION['keranjang'])) echo "<p style='text-align:center; color:#ccc; margin-top:20px;'><i class='fa-solid fa-basket-shopping fa-2x mb-2'></i><br>Keranjang Kosong</p>"; ?>
+                    <?php 
+                        endforeach; 
+                    endif; 
+                    ?>
                 </div>
 
-                <div class="cart-footer">
-                    <form method="POST" id="formPembayaran" onsubmit="return validasiKasbon()">
-                        <input type="hidden" name="total_awal" id="totalAwal" value="<?= $total ?>">
+                <form action="kasir.php" method="POST" id="formKasir">
+                    <div class="total-area">
+                        <div class="baris-total">
+                            <span>Subtotal:</span>
+                            <span style="font-weight:bold;">Rp <?= number_format($total,0,',','.') ?></span>
+                        </div>
+                        <div class="baris-total" style="align-items: center;">
+                            <span>Diskon (Rp):</span>
+                            <input type="text" name="diskon_global" id="diskonGlobal" value="0" class="input-kasir" style="width: 50%; margin:0; text-align:right;" onkeyup="formatRp(this); hitungKembalian();">
+                        </div>
                         
-                        <div style="display:flex; justify-content:space-between; margin-bottom:15px; font-weight:800; font-size:1.4rem; color: var(--primary);">
-                            <span>TOTAL</span>
-                            <span id="teksTotalAkhir">Rp <?= number_format($total, 0, ',', '.') ?></span>
+                        <div id="boxWarning" class="box-warning untung" style="display:none;"></div>
+                        <input type="hidden" id="totalBelanjaAwal" value="<?= $total ?>">
+                        <input type="hidden" id="totalModalHPP" value="<?= $total_modal ?>">
+
+                        <div class="baris-total baris-grand">
+                            <span>Total Akhir:</span>
+                            <span id="textGrandTotal">Rp <?= number_format($total,0,',','.') ?></span>
                         </div>
 
-                        <button type="button" class="btn-opsi" id="btnToggle" onclick="toggleOpsi()" <?= ($total == 0) ? 'disabled' : '' ?>>
-                            <i class="fa-solid fa-chevron-down"></i> Klik Jika Ada Diskon / Pelanggan Kasbon
-                        </button>
+                        <input type="text" name="nama_pelanggan" id="namaPelanggan" class="input-kasir" placeholder="Nama Pelanggan (Opsional / Wajib jika Kasbon)">
+                        <input type="text" name="uang_diterima" id="uangDiterima" class="input-kasir" placeholder="Uang Diterima (Rp)" onkeyup="formatRp(this); hitungKembalian();">
+                        
+                        <div id="statusKembalian" style="text-align: center; font-weight: bold; padding: 10px; border-radius: 6px; margin-top: 5px;"></div>
+                    </div>
 
-                        <div id="panelOpsi" class="panel-opsi">
-                            
-                            <div style="margin-bottom: 10px;">
-                                <label style="font-size: 0.85em; font-weight: 700; color: #888; display: block; margin-bottom: 5px;">Nama Pelanggan <span style="color:red; font-size:0.8em; display:none;" id="labelWajib">(Wajib Isi Jika Kasbon)</span></label>
-                                <input type="text" name="nama_pelanggan" id="namaPelanggan" class="input-kasir" placeholder="Kosongkan jika umum" style="border-color: #3498db;">
-                            </div>
-
-                            <div style="margin-bottom: 10px;">
-                                <label style="font-size: 0.85em; font-weight: 700; color: #888; display: block; margin-bottom: 5px;">Diskon Global (Rp)</label>
-                                <input type="text" name="diskon_global" id="diskonGlobal" class="input-kasir" value="" placeholder="Cth: 5.000" onkeyup="formatDanHitung(this)">
-                            </div>
-
-                            <div style="margin-bottom: 5px;">
-                                <label style="font-size: 0.85em; font-weight: 700; color: #888; display: block; margin-bottom: 5px;">Uang Diterima / DP (Rp)</label>
-                                <input type="text" name="uang_diterima" id="uangDiterima" class="input-kasir" value="" placeholder="Kosongkan jika uang pas" onkeyup="formatDanHitung(this)" style="border-color: var(--green); color: var(--green);">
-                            </div>
-
-                            <div id="boxStatus" class="status-box" style="background: #e8f8f5; color: var(--green);">
-                                ✅ Status: Lunas (Uang Pas)
-                            </div>
-                        </div>
-
-                        <button type="submit" name="proses_bayar" class="btn-bayar" <?= ($total == 0) ? 'disabled' : '' ?>>
-                            Proses Pembayaran
-                        </button>
-                    </form>
-                </div>
+                    <button type="submit" name="bayar" class="btn-bayar" onclick="return bersihkanFormat()">
+                        <i class="fa-solid fa-check-circle"></i> Proses Pembayaran
+                    </button>
+                    
+                    <div class="aksi-tambahan">
+                        <?php if(!empty($_SESSION['keranjang'])): ?>
+                            <button type="button" class="btn-tahan" onclick="bukaModalHold()">
+                                <i class="fa-solid fa-pause"></i> Tahan (Hold)
+                            </button>
+                        <?php endif; ?>
+                        <a href="kasir.php?aksi=clear" class="btn-kosong" onclick="return confirm('Yakin kosongkan keranjang?')">
+                            <i class="fa-solid fa-trash-can"></i> Batal
+                        </a>
+                    </div>
+                </form>
             </div>
         </div>
     </main>
 
+    <div class="modal-bg" id="modalHold">
+        <div class="modal-konten">
+            <h3 style="color: #f39c12;"><i class="fa-solid fa-pause"></i> Tahan Transaksi</h3>
+            <p style="font-size: 0.9em; color: #555;">Keranjang akan disimpan sementara dan layar kasir akan dikosongkan.</p>
+            <form action="kasir.php" method="POST">
+                <input type="text" name="nama_pelanggan_hold" class="input-kasir" placeholder="Belanjaan atas nama siapa? (Wajib diisi)" required style="margin-top: 10px;">
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button type="submit" name="proses_hold" class="btn-tahan" style="width: 100%;">Simpan ke Hold</button>
+                    <button type="button" class="btn-kosong" onclick="tutupModal('modalHold')" style="width: 100%;">Batal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-bg" id="modalDaftarHold">
+        <div class="modal-konten" style="width: 500px;">
+            <h3><i class="fa-solid fa-list"></i> Daftar Transaksi Ditahan</h3>
+            <?php if(empty($_SESSION['hold_keranjang'])): ?>
+                <p>Tidak ada transaksi yang ditahan saat ini.</p>
+            <?php else: ?>
+                <table class="tabel-hold">
+                    <tr>
+                        <th>Waktu</th>
+                        <th>Nama Pelanggan</th>
+                        <th style="text-align: center;">Aksi</th>
+                    </tr>
+                    <?php foreach($_SESSION['hold_keranjang'] as $id_hold => $data): ?>
+                    <tr>
+                        <td><?= $data['waktu'] ?></td>
+                        <td><strong><?= htmlspecialchars($data['nama']) ?></strong></td>
+                        <td style="text-align: center;">
+                            <a href="kasir.php?aksi=load_hold&id_hold=<?= $id_hold ?>" class="stok-badge" style="background: #3498db; color: white; text-decoration: none;">Lanjut</a>
+                            <a href="kasir.php?aksi=hapus_hold&id_hold=<?= $id_hold ?>" class="stok-badge" style="background: #e74c3c; color: white; text-decoration: none;" onclick="return confirm('Hapus hold ini?')">Hapus</a>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </table>
+            <?php endif; ?>
+            <button type="button" class="btn-kosong" onclick="tutupModal('modalDaftarHold')" style="width: 100%; margin-top: 15px; background: #95a5a6;">Tutup</button>
+        </div>
+    </div>
+
     <script>
-        let formTerbuka = false;
-        let isKasbon = false; // Penanda apakah transaksi ini kasbon
+        // Pencarian Produk Realtime
+        document.getElementById('cariProduk').addEventListener('input', function() {
+            let filter = this.value.toLowerCase();
+            let cards = document.querySelectorAll('.card-produk');
+            cards.forEach(card => {
+                let nama = card.querySelector('h4').innerText.toLowerCase();
+                if(nama.includes(filter)) card.style.display = '';
+                else card.style.display = 'none';
+            });
+        });
 
-        function toggleOpsi() {
-            let panel = document.getElementById('panelOpsi');
-            let btn = document.getElementById('btnToggle');
-            
-            formTerbuka = !formTerbuka;
-            
-            if (formTerbuka) {
-                panel.style.display = 'block';
-                btn.innerHTML = '<i class="fa-solid fa-chevron-up"></i> Tutup Form Opsi';
-                document.getElementById('uangDiterima').focus();
-            } else {
-                panel.style.display = 'none';
-                btn.innerHTML = '<i class="fa-solid fa-chevron-down"></i> Klik Jika Ada Diskon / Pelanggan Kasbon';
-                // Reset isian
-                document.getElementById('diskonGlobal').value = '';
-                document.getElementById('uangDiterima').value = '';
-                document.getElementById('namaPelanggan').value = '';
-                kalkulasiUang();
-            }
-        }
-
-        function unformatRupiah(angka) { 
-            if(angka === "") return "";
-            return parseInt(angka.replace(/[^0-9]/g, '')) || 0; 
-        }
-
-        function formatRupiah(angka) {
-            let number_string = angka.replace(/[^0-9]/g, '').toString();
-            let sisa = number_string.length % 3;
-            let rupiah = number_string.substr(0, sisa);
-            let ribuan = number_string.substr(sisa).match(/\d{3}/gi);
-
-            if (ribuan) {
+        // Format Uang dan Hitung Kembalian & Rugi
+        function formatRp(input) {
+            let val = input.value.replace(/[^,\d]/g, '').toString();
+            let split = val.split(',');
+            let sisa = split[0].length % 3;
+            let rupiah = split[0].substr(0, sisa);
+            let ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+            if(ribuan) {
                 let separator = sisa ? '.' : '';
                 rupiah += separator + ribuan.join('.');
             }
-            return rupiah;
+            rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
+            input.value = rupiah;
         }
 
-        function formatDanHitung(input) {
-            input.value = formatRupiah(input.value);
-            kalkulasiUang();
+        function unformatRupiah(str) {
+            return parseInt(str.replace(/[^,\d]/g, '')) || 0;
         }
 
-        function kalkulasiUang() {
-            let totalAwal = parseInt(document.getElementById('totalAwal').value) || 0;
-            let valDiskon = document.getElementById('diskonGlobal').value;
-            let valUang = document.getElementById('uangDiterima').value;
-            let labelWajib = document.getElementById('labelWajib');
-
-            let diskon = unformatRupiah(valDiskon) || 0;
-            let totalAkhir = totalAwal - diskon;
-            if (totalAkhir < 0) totalAkhir = 0;
-
-            document.getElementById('teksTotalAkhir').innerText = 'Rp ' + totalAkhir.toLocaleString('id-ID');
-
-            let boxStatus = document.getElementById('boxStatus');
+        let isKasbon = false;
+        function hitungKembalian() {
+            let d_input = document.getElementById('diskonGlobal').value;
+            let u_input = document.getElementById('uangDiterima').value;
             
-            if (valUang === "") {
-                boxStatus.style.background = '#e8f8f5';
-                boxStatus.style.color = 'var(--green)';
-                boxStatus.innerHTML = '✅ Status: Lunas (Uang Pas)';
-                isKasbon = false;
-                labelWajib.style.display = 'none';
-                return;
+            let diskon = unformatRupiah(d_input);
+            let uang = unformatRupiah(u_input);
+            let totalAwal = parseInt(document.getElementById('totalBelanjaAwal').value) || 0;
+            let modalHPP = parseInt(document.getElementById('totalModalHPP').value) || 0;
+            
+            let grandTotal = totalAwal - diskon;
+            if(grandTotal < 0) grandTotal = 0;
+
+            document.getElementById('textGrandTotal').innerText = 'Rp ' + grandTotal.toLocaleString('id-ID');
+
+            // --- PERINGATAN RUGI ---
+            let boxWarning = document.getElementById('boxWarning');
+            if(totalAwal > 0) {
+                boxWarning.style.display = 'block';
+                let profit = grandTotal - modalHPP;
+                if(profit < 0) {
+                    boxWarning.className = 'box-warning rugi';
+                    boxWarning.innerHTML = '🚨 AWAS RUGI! Potong modal Rp ' + Math.abs(profit).toLocaleString('id-ID');
+                } else {
+                    boxWarning.className = 'box-warning untung';
+                    boxWarning.innerHTML = '✅ Laba Kotor: Rp ' + profit.toLocaleString('id-ID');
+                }
             }
 
-            let uangDiterima = unformatRupiah(valUang);
-            let kembalian = uangDiterima - totalAkhir;
+            // --- HITUNG KEMBALIAN ---
+            let boxStatus = document.getElementById('statusKembalian');
+            if (u_input === "") {
+                boxStatus.innerHTML = ''; return;
+            }
 
-            if (kembalian < 0) {
-                boxStatus.style.background = '#ffebee';
+            let kembalian = uang - grandTotal;
+            if(kembalian < 0) {
+                boxStatus.style.background = '#fdedec';
                 boxStatus.style.color = 'var(--red)';
-                boxStatus.innerHTML = '⚠️ STATUS: KASBON (Kurang Rp ' + Math.abs(kembalian).toLocaleString('id-ID') + ')';
+                boxStatus.innerHTML = '⚠️ KASBON: Kurang Rp ' + Math.abs(kembalian).toLocaleString('id-ID');
                 isKasbon = true;
-                labelWajib.style.display = 'inline'; // Tampilkan wajib isi nama
             } else {
                 boxStatus.style.background = '#e8f8f5';
                 boxStatus.style.color = 'var(--green)';
                 boxStatus.innerHTML = '✅ KEMBALIAN: Rp ' + kembalian.toLocaleString('id-ID');
                 isKasbon = false;
-                labelWajib.style.display = 'none';
             }
         }
 
-        // FASE 5: Validasi sebelum mensubmit form
-        function validasiKasbon() {
+        function bersihkanFormat() {
             let nama = document.getElementById('namaPelanggan').value;
-            
-            // Jika Kasbon, Wajib Isi Nama
             if(isKasbon && nama.trim() === "") {
-                alert("PENTING: Transaksi Kasbon / Kurang Bayar WAJIB mengisi Nama Pelanggan!");
+                alert("PENTING: Transaksi Kasbon wajib isi Nama Pelanggan!");
                 document.getElementById('namaPelanggan').focus();
-                return false; // Batalkan submit
+                return false;
             }
 
-            // Bersihkan format titik sebelum kirim ke PHP
             let d = document.getElementById('diskonGlobal');
             let u = document.getElementById('uangDiterima');
             d.value = unformatRupiah(d.value);
-            if(u.value !== "") {
-                u.value = unformatRupiah(u.value);
-            }
-            return true; // Lanjut submit
+            if(u.value !== "") u.value = unformatRupiah(u.value);
+            return true;
         }
+
+        // Script Modals
+        const modalHold = document.getElementById('modalHold');
+        const modalDaftarHold = document.getElementById('modalDaftarHold');
+
+        function bukaModalHold() { modalHold.style.display = 'flex'; }
+        function bukaModalDaftarHold() { modalDaftarHold.style.display = 'flex'; }
+        function tutupModal(id) { document.getElementById(id).style.display = 'none'; }
+        
+        window.onclick = function(e) {
+            if (e.target == modalHold) tutupModal('modalHold');
+            if (e.target == modalDaftarHold) tutupModal('modalDaftarHold');
+        }
+
+        // Jalankan hitungan pertama kali load
+        window.onload = hitungKembalian;
     </script>
 </body>
 </html>
