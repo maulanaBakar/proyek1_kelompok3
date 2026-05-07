@@ -119,7 +119,7 @@ if (isset($_POST['proses_hold'])) {
 }
 
 // ==========================================
-// PROSES BAYAR (CHECKOUT)
+// PROSES BAYAR (CHECKOUT) - SUDAH DIPERBAIKI SESUAI DB ASLI
 // ==========================================
 if(isset($_POST['bayar'])) {
     if(empty($_SESSION['keranjang'])) {
@@ -127,10 +127,15 @@ if(isset($_POST['bayar'])) {
         exit;
     }
 
-    $nama_pelanggan = mysqli_real_escape_string($koneksi, $_POST['nama_pelanggan']);
+    $nama_pelanggan_raw = mysqli_real_escape_string($koneksi, $_POST['nama_pelanggan']);
+    $nama_pelanggan = empty(trim($nama_pelanggan_raw)) ? "UMUM" : $nama_pelanggan_raw;
+
     $diskon_global  = (int)str_replace('.', '', $_POST['diskon_global']);
-    $uang_diterima  = (int)str_replace('.', '', $_POST['uang_diterima']);
-    $tanggal        = date("Y-m-d H:i:s");
+    
+    $uang_diterima_raw = $_POST['uang_diterima'];
+    $uang_diterima = empty(trim($uang_diterima_raw)) ? 0 : (int)str_replace('.', '', $uang_diterima_raw);
+    
+    $tanggal = date("Y-m-d H:i:s");
 
     $total_belanja  = 0;
     foreach($_SESSION['keranjang'] as $item) {
@@ -140,12 +145,26 @@ if(isset($_POST['bayar'])) {
     $grand_total = $total_belanja - $diskon_global;
     if($grand_total < 0) $grand_total = 0;
 
-    $kembalian = $uang_diterima - $grand_total;
-    $status_transaksi = ($kembalian < 0) ? 'Kasbon' : 'Lunas';
+    // Kalau uang tidak diisi, anggap Uang Pas
+    if(trim($uang_diterima_raw) === '') {
+        $uang_diterima = $grand_total; 
+    }
 
-    // Insert ke tabel transaksi
-    $query_transaksi = "INSERT INTO transaksi (tanggal_transaksi, nama_pelanggan, total_pendapatan, uang_diterima, diskon, status) 
-                        VALUES ('$tanggal', '$nama_pelanggan', '$grand_total', '$uang_diterima', '$diskon_global', '$status_transaksi')";
+    $kembalian = $uang_diterima - $grand_total;
+    $kurang_bayar = 0;
+    $status_bayar = 'Lunas';
+
+    // Deteksi Kasbon
+    if($kembalian < 0) {
+        $kurang_bayar = abs($kembalian);
+        $status_bayar = 'Kasbon';
+    }
+
+    // Insert ke tabel transaksi DENGAN KOLOM YANG BENAR!
+    $query_transaksi = "INSERT INTO transaksi 
+                        (tanggal_transaksi, nama_pelanggan, total_pendapatan, uang_diterima, status_bayar, status_transaksi, diskon_global, kurang_bayar) 
+                        VALUES 
+                        ('$tanggal', '$nama_pelanggan', '$grand_total', '$uang_diterima', '$status_bayar', 'Selesai', '$diskon_global', '$kurang_bayar')";
     
     if(mysqli_query($koneksi, $query_transaksi)) {
         $id_transaksi = mysqli_insert_id($koneksi);
@@ -154,21 +173,37 @@ if(isset($_POST['bayar'])) {
         foreach($_SESSION['keranjang'] as $id_produk => $item) {
             $qty = $item['qty'];
             $subtotal = $item['harga'] * $qty;
+            $modal_satuan = $item['modal'];
 
-            mysqli_query($koneksi, "INSERT INTO detail_transaksi (id_transaksi, id_produk, jumlah_produk, subtotal) 
-                                    VALUES ('$id_transaksi', '$id_produk', '$qty', '$subtotal')");
+            mysqli_query($koneksi, "INSERT INTO detail_transaksi (id_transaksi, id_produk, jumlah_produk, subtotal, modal_satuan) 
+                                    VALUES ('$id_transaksi', '$id_produk', '$qty', '$subtotal', '$modal_satuan')");
             
             // Kurangi stok
             mysqli_query($koneksi, "UPDATE produk SET stok = stok - $qty WHERE id_produk = '$id_produk'");
         }
 
+        // PENCATATAN OTOMATIS KE BUKU KAS
+        $uang_masuk_kas = ($uang_diterima < $grand_total) ? $uang_diterima : $grand_total;
+
+        if ($uang_masuk_kas > 0) {
+            $keterangan = "TRX #" . $id_transaksi;
+            if ($nama_pelanggan != "UMUM") {
+                $keterangan .= " ($nama_pelanggan)";
+            }
+            if ($status_bayar == "Kasbon") {
+                $keterangan .= " [DP KASBON]";
+            }
+            mysqli_query($koneksi, "INSERT INTO buku_kas (tanggal, keterangan, jenis, nominal) 
+                                   VALUES ('$tanggal', '$keterangan', 'Pemasukan', '$uang_masuk_kas')");
+        }
+
         $_SESSION['keranjang'] = []; // Bersihkan keranjang
         
-        $pesan = ($status_transaksi == 'Kasbon') ? "Transaksi KASBON tersimpan!" : "Pembayaran LUNAS Berhasil!";
-        echo "<script>alert('$pesan'); window.open('cetak_struk.php?id=$id_transaksi', '_blank'); window.location='kasir.php';</script>";
+        $pesan = ($status_bayar == 'Kasbon') ? "Berhasil! Transaksi KASBON tersimpan." : "Pembayaran LUNAS Berhasil!";
+        echo "<script>alert('$pesan'); window.location='kasir.php';</script>";
         exit;
     } else {
-        echo "<script>alert('Gagal menyimpan transaksi!'); window.location='kasir.php';</script>";
+        echo "<script>alert('Gagal menyimpan transaksi: " . mysqli_error($koneksi) . "'); window.location='kasir.php';</script>";
     }
 }
 ?>

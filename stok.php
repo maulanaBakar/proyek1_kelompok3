@@ -1,6 +1,20 @@
 <?php
 require_once 'koneksi.php'; 
 
+// ====================================================================
+// AUTO-FIX DATABASE UNTUK RIWAYAT KERUGIAN (Mengatasi Error Kakak)
+// ====================================================================
+mysqli_query($koneksi, "CREATE TABLE IF NOT EXISTS riwayat_kerugian (
+    id_kerugian INT AUTO_INCREMENT PRIMARY KEY,
+    tanggal DATE,
+    id_produk INT,
+    jumlah_rusak INT,
+    nilai_kerugian INT,
+    keterangan TEXT
+)");
+
+
+
 // --- PROSES SIMPAN / UPDATE DATA PRODUK ---
 if (isset($_POST['save'])) {
     $id_produk     = $_POST['id_produk'];
@@ -71,9 +85,36 @@ if (isset($_POST['lapor_rusak'])) {
     }
 }
 
-// ====================================================================
-// SKENARIO 35: PROSES KONSUMSI PRIBADI (PRIVE BARANG)
-// ====================================================================
+// --- PROSES KOREKSI BARANG RUSAK ---
+if (isset($_POST['koreksi_rusak'])) {
+    $id_produk      = mysqli_real_escape_string($koneksi, $_POST['id_produk_koreksi']);
+    $jumlah_koreksi = (int)$_POST['jumlah_koreksi'];
+    $tanggal        = date('Y-m-d');
+
+    $cek = mysqli_query($koneksi, "SELECT stok_rusak, jenis_produk, modal, hpp FROM produk WHERE id_produk = '$id_produk'");
+    $data = mysqli_fetch_assoc($cek);
+
+    if ($jumlah_koreksi > $data['stok_rusak']) {
+        echo "<script>alert('Gagal: Jumlah koreksi melebihi total barang yang rusak!'); window.history.back();</script>";
+        exit;
+    } else {
+        $harga_satuan = ($data['jenis_produk'] == 'Luar') ? $data['modal'] : $data['hpp'];
+        $nilai_kembali = $jumlah_koreksi * $harga_satuan;
+
+        // Kembalikan stok, kurangi stok_rusak
+        $query_koreksi = "UPDATE produk SET stok = stok + $jumlah_koreksi, stok_rusak = stok_rusak - $jumlah_koreksi WHERE id_produk = '$id_produk'";
+        
+        if (mysqli_query($koneksi, $query_koreksi)) {
+            // Masukkan riwayat minus sebagai penyeimbang kerugian
+            mysqli_query($koneksi, "INSERT INTO riwayat_kerugian (id_produk, jumlah_rusak, nilai_kerugian, tanggal, keterangan) 
+                                    VALUES ('$id_produk', '-$jumlah_koreksi', '-$nilai_kembali', '$tanggal', 'Koreksi Salah Input Rusak')");
+            echo "<script>alert('Koreksi berhasil! Stok telah dikembalikan.'); window.location='stok.php';</script>";
+            exit;
+        }
+    }
+}
+
+// --- PROSES KONSUMSI PRIBADI (PRIVE BARANG) ---
 if (isset($_POST['prive_barang'])) {
     $id_produk    = mysqli_real_escape_string($koneksi, $_POST['id_produk_prive']);
     $jumlah_prive = (int)$_POST['jumlah_prive'];
@@ -85,7 +126,6 @@ if (isset($_POST['prive_barang'])) {
         echo "<script>alert('Gagal: Jumlah yang diambil melebihi sisa stok!'); window.history.back();</script>";
         exit;
     } else {
-        // Otomatis bikin tabel prive_barang kalau belum ada di database
         mysqli_query($koneksi, "CREATE TABLE IF NOT EXISTS prive_barang (
             id_prive INT AUTO_INCREMENT PRIMARY KEY,
             tanggal DATE,
@@ -95,13 +135,11 @@ if (isset($_POST['prive_barang'])) {
             keterangan TEXT
         )");
 
-        // Hitung nilai modal barang yang dimakan/diambil
         $cek_harga = mysqli_query($koneksi, "SELECT jenis_produk, modal, hpp FROM produk WHERE id_produk = '$id_produk'");
         $data_harga = mysqli_fetch_assoc($cek_harga);
         $harga_satuan = ($data_harga['jenis_produk'] == 'Luar') ? $data_harga['modal'] : $data_harga['hpp'];
         $total_hpp = $jumlah_prive * $harga_satuan;
 
-        // Kurangi stok dan simpan ke buku catatan Prive
         $query_stok = "UPDATE produk SET stok = stok - $jumlah_prive WHERE id_produk = '$id_produk'";
         if (mysqli_query($koneksi, $query_stok)) {
             mysqli_query($koneksi, "INSERT INTO prive_barang (tanggal, id_produk, jumlah, total_hpp, keterangan) 
@@ -111,7 +149,6 @@ if (isset($_POST['prive_barang'])) {
         }
     }
 }
-// ====================================================================
 
 // --- PROSES HAPUS (SOFT DELETE) ---
 if (isset($_GET['hapus'])) {
@@ -170,6 +207,9 @@ if (isset($_POST['proses_tambah_cepat'])) {
         .btn-filter:hover { opacity: 0.9; }
         .baris-atas { display: flex; justify-content: space-between; width: 100%; align-items: center; }
         textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; resize: vertical; }
+        
+        .badge-rusak { background: #ffebee; color: #c62828; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-weight: bold; border: 1px solid #ef9a9a; transition: 0.2s;}
+        .badge-rusak:hover { background: #e57373; color: white;}
     </style>
 </head>
 <body>
@@ -215,17 +255,6 @@ if (isset($_POST['proses_tambah_cepat'])) {
                         <option value="Luar" <?= (isset($_GET['jenis']) && $_GET['jenis'] == 'Luar') ? 'selected' : '' ?>>Produk Luar</option>
                         <option value="Produksi" <?= (isset($_GET['jenis']) && $_GET['jenis'] == 'Produksi') ? 'selected' : '' ?>>Produksi Sendiri</option>
                     </select>
-                    <select name="status">
-                        <option value="">Semua Status Stok</option>
-                        <option value="aman" <?= (isset($_GET['status']) && $_GET['status'] == 'aman') ? 'selected' : '' ?>>Stok Aman</option>
-                        <option value="kritis" <?= (isset($_GET['status']) && $_GET['status'] == 'kritis') ? 'selected' : '' ?>>Hampir Habis</option>
-                        <option value="habis" <?= (isset($_GET['status']) && $_GET['status'] == 'habis') ? 'selected' : '' ?>>Stok Habis</option>
-                    </select>
-                    <select name="sort">
-                        <option value="stok_asc" <?= (isset($_GET['sort']) && $_GET['sort'] == 'stok_asc') ? 'selected' : '' ?>>Stok: Paling Sedikit</option>
-                        <option value="stok_desc" <?= (isset($_GET['sort']) && $_GET['sort'] == 'stok_desc') ? 'selected' : '' ?>>Stok: Paling Banyak</option>
-                        <option value="nama_asc" <?= (isset($_GET['sort']) && $_GET['sort'] == 'nama_asc') ? 'selected' : '' ?>>Nama: A - Z</option>
-                    </select>
                     <button type="submit" class="btn-filter"><i class="fa-solid fa-filter"></i></button>
                     <a href="stok.php" class="btn-filter" style="background: #e74c3c; text-decoration: none;"><i class="fa-solid fa-rotate-right"></i></a>
                 </form>
@@ -240,7 +269,7 @@ if (isset($_POST['proses_tambah_cepat'])) {
                         <th>Jenis</th>
                         <th>Harga Jual</th>
                         <th>Stok Saat Ini</th>
-                        <th style="text-align: center;">Rusak</th>
+                        <th style="text-align: center;">Rusak (Klik Batal)</th>
                         <th style="text-align: center;">Aksi Lengkap</th>
                     </tr>
                 </thead>
@@ -249,20 +278,9 @@ if (isset($_POST['proses_tambah_cepat'])) {
                     $kondisi = ["status_aktif = 'Y'"];
                     if (!empty($_GET['cari'])) { $caribersih = trim($_GET['cari']); $kondisi[] = "nama_produk LIKE '%" . mysqli_real_escape_string($koneksi, $caribersih) . "%'"; }
                     if (!empty($_GET['jenis'])) { $kondisi[] = "jenis_produk = '" . mysqli_real_escape_string($koneksi, $_GET['jenis']) . "'"; }
-                    if (!empty($_GET['status'])) {
-                        if ($_GET['status'] == 'habis') { $kondisi[] = "stok <= 0"; }
-                        elseif ($_GET['status'] == 'kritis') { $kondisi[] = "(stok > 0 AND stok <= batas_minimal)"; }
-                        elseif ($_GET['status'] == 'aman') { $kondisi[] = "stok > batas_minimal"; }
-                    }
 
                     $sql_where = count($kondisi) > 0 ? " WHERE " . implode(" AND ", $kondisi) : "";
                     $sql_order = " ORDER BY stok ASC"; 
-                    if (!empty($_GET['sort'])) {
-                        switch ($_GET['sort']) {
-                            case 'stok_desc': $sql_order = " ORDER BY stok DESC"; break;
-                            case 'nama_asc':  $sql_order = " ORDER BY nama_produk ASC"; break;
-                        }
-                    }
 
                     $sql = "SELECT * FROM produk" . $sql_where . $sql_order;
                     $res = mysqli_query($koneksi, $sql);
@@ -289,8 +307,14 @@ if (isset($_POST['proses_tambah_cepat'])) {
                         <td>
                             <span class="badge-stok <?= $class ?>"><?= $stok ?> - <?= $label ?></span>
                         </td>
-                        <td style="text-align: center; color: #e74c3c; font-weight: bold;">
-                            <?= $rusak > 0 ? $rusak : '-' ?>
+                        <td style="text-align: center;">
+                            <?php if($rusak > 0): ?>
+                                <span class="badge-rusak" title="Koreksi Salah Input Rusak" onclick="bukaModalKoreksi('<?= $row['id_produk'] ?>', '<?= addslashes($row['nama_produk']) ?>', '<?= $rusak ?>')">
+                                    <i class="fa-solid fa-minus-circle"></i> <?= $rusak ?>
+                                </span>
+                            <?php else: ?>
+                                <span style="color: #ccc;">-</span>
+                            <?php endif; ?>
                         </td>
                         <td style="text-align: center; display: flex; gap: 12px; justify-content: center; align-items: center;">
                              <i class="fa-solid fa-cart-plus" title="Tambah Stok Masuk" style="color: #27ae60; cursor:pointer; font-size: 1.1em;"
@@ -367,37 +391,6 @@ if (isset($_POST['proses_tambah_cepat'])) {
         </div>
     </div>
 
-    <div class="modal-bg" id="modalPrive">
-        <div class="modal-konten">
-            <div class="modal-head">
-                <h3 style="color: #3498db;"><i class="fa-solid fa-hand-holding-heart"></i> Ambil Pribadi (Prive)</h3>
-                <i class="fa-solid fa-xmark" style="cursor: pointer" onclick="tutupModal('modalPrive')"></i>
-            </div>
-            <form action="stok.php" method="POST" class="modal-body">
-                <input type="hidden" name="id_produk_prive" id="pId">
-                <input type="hidden" name="stok_awal_prive" id="pStokAwal">
-                
-                <p style="margin-bottom: 15px; font-size: 0.9em; color: #555;">
-                    Produk: <strong id="pNamaProduk" style="color: #000;"></strong><br>
-                    Stok Tersedia: <strong id="pStokTeks"></strong>
-                </p>
-
-                <div class="input-grup">
-                    <label>Berapa bungkus yang diambil?</label>
-                    <input type="number" name="jumlah_prive" id="pJumlah" min="1" required>
-                    <small style="color: #888;">Stok akan dikurangi tanpa masuk ke kerugian toko.</small>
-                </div>
-
-                <div class="input-grup">
-                    <label>Keterangan / Siapa yang ambil?</label>
-                    <textarea name="keterangan_prive" rows="2" placeholder="Cth: Dimakan anak, Tester, Prive Owner" required></textarea>
-                </div>
-                
-                <button type="submit" name="prive_barang" class="btn-simpan" style="background: #3498db;">Catat Prive</button>
-            </form>
-        </div>
-    </div>
-
     <div class="modal-bg" id="modalRusak">
         <div class="modal-konten">
             <div class="modal-head">
@@ -407,55 +400,67 @@ if (isset($_POST['proses_tambah_cepat'])) {
             <form action="stok.php" method="POST" class="modal-body">
                 <input type="hidden" name="id_produk_rusak" id="rId">
                 <input type="hidden" name="stok_awal" id="rStokAwal">
-                
                 <p style="margin-bottom: 15px; font-size: 0.9em; color: #555;">
                     Produk: <strong id="rNamaProduk" style="color: #000;"></strong><br>
                     Stok Tersedia: <strong id="rStokTeks"></strong>
                 </p>
-
                 <div class="input-grup">
                     <label>Jumlah Barang Rusak</label>
                     <input type="number" name="jumlah_rusak" id="rJumlah" min="1" required>
                     <small style="color: #888;">Stok akan otomatis dikurangi sejumlah ini.</small>
                 </div>
-
                 <div class="input-grup">
                     <label>Keterangan / Penyebab (Opsional)</label>
                     <textarea name="keterangan_rusak" rows="3" placeholder="Contoh: Jatuh saat di gudang, basi, dll..."></textarea>
                 </div>
-                
                 <button type="submit" name="lapor_rusak" class="btn-simpan" style="background: #e74c3c;">Proses Laporan</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-bg" id="modalKoreksi">
+        <div class="modal-konten">
+            <div class="modal-head">
+                <h3 style="color: #f39c12;"><i class="fa-solid fa-rotate-left"></i> Koreksi Barang Rusak</h3>
+                <i class="fa-solid fa-xmark" style="cursor: pointer" onclick="tutupModal('modalKoreksi')"></i>
+            </div>
+            <form action="stok.php" method="POST" class="modal-body">
+                <input type="hidden" name="id_produk_koreksi" id="kId">
+                <p style="margin-bottom: 15px; font-size: 0.9em; color: #555;">
+                    Produk: <strong id="kNamaProduk" style="color: #000;"></strong><br>
+                    Tercatat Rusak: <strong id="kStokRusakTeks" style="color: red;"></strong>
+                </p>
+                <div class="input-grup">
+                    <label>Berapa yang ingin dikembalikan ke stok utuh?</label>
+                    <input type="number" name="jumlah_koreksi" id="kJumlah" min="1" required>
+                    <small style="color: #888;">Angka rusak akan berkurang, dan stok barang akan bertambah kembali.</small>
+                </div>
+                <button type="submit" name="koreksi_rusak" class="btn-simpan" style="background: #f39c12;">Kembalikan Stok</button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="modal-bg" id="modalPrive">
+        <div class="modal-konten">
+            <div class="modal-head"><h3 style="color:#3498db;">Ambil Pribadi (Prive)</h3><i class="fa-solid fa-xmark" style="cursor: pointer" onclick="tutupModal('modalPrive')"></i></div>
+            <form action="stok.php" method="POST" class="modal-body">
+                <input type="hidden" name="id_produk_prive" id="pId">
+                <input type="hidden" name="stok_awal_prive" id="pStokAwal">
+                <div class="input-grup"><label>Berapa yang diambil?</label><input type="number" name="jumlah_prive" id="pJumlah" min="1" required></div>
+                <div class="input-grup"><label>Siapa yang ambil?</label><textarea name="keterangan_prive" required></textarea></div>
+                <button type="submit" name="prive_barang" class="btn-simpan" style="background: #3498db;">Catat Prive</button>
             </form>
         </div>
     </div>
 
     <div class="modal-bg" id="modalStokCepat">
         <div class="modal-konten">
-            <div class="modal-head">
-                <h3>Tambah Stok Masuk (Batch Baru)</h3>
-                <i class="fa-solid fa-xmark" style="cursor: pointer" onclick="tutupModal('modalStokCepat')"></i>
-            </div>
+            <div class="modal-head"><h3>Tambah Stok</h3><i class="fa-solid fa-xmark" style="cursor: pointer" onclick="tutupModal('modalStokCepat')"></i></div>
             <form action="stok.php" method="POST" class="modal-body">
                 <input type="hidden" name="id_produk_cepat" id="cId">
-                
-                <p style="margin-bottom: 15px; font-size: 0.9em;">
-                    Produk: <strong id="cNamaProduk"></strong>
-                </p>
-
-                <div class="input-grup">
-                    <label>Jumlah Stok yang Ditambahkan</label>
-                    <input type="number" name="jumlah_tambah" required min="1">
-                </div>
-
-                <div class="input-grup">
-                    <label>Total Biaya / Modal Tagihan (Rp)</label>
-                    <input type="number" name="biaya_batch_baru" required min="0">
-                    <small style="color: #888; display: block; margin-top: 5px;">
-                        Masukkan <strong>TOTAL</strong> biaya kulakan nota ini. Sistem akan menghitung rata-rata Modal/HPP otomatis.
-                    </small>
-                </div>
-                
-                <button type="submit" name="proses_tambah_cepat" class="btn-simpan" style="background: #27ae60;">Update Stok & Harga</button>
+                <div class="input-grup"><label>Jumlah Tambah</label><input type="number" name="jumlah_tambah" required min="1"></div>
+                <div class="input-grup"><label>Total Biaya (Rp)</label><input type="number" name="biaya_batch_baru" required min="0"></div>
+                <button type="submit" name="proses_tambah_cepat" class="btn-simpan" style="background: #27ae60;">Update Stok</button>
             </form>
         </div>
     </div>
@@ -463,58 +468,51 @@ if (isset($_POST['proses_tambah_cepat'])) {
     <script>
         const modalUtama = document.getElementById('modalProduk');
         const modalRusak = document.getElementById('modalRusak');
+        const modalKoreksi = document.getElementById('modalKoreksi');
         const modalStokCepat = document.getElementById('modalStokCepat');
         const modalPrive = document.getElementById('modalPrive');
         
         function ubahTampilanForm() {
             const jenis = document.getElementById('mJenis').value;
-            if (jenis === 'Luar') {
-                document.getElementById('formLuar').style.display = 'block';
-                document.getElementById('formProduksi').style.display = 'none';
-            } else {
-                document.getElementById('formLuar').style.display = 'none';
-                document.getElementById('formProduksi').style.display = 'block';
-            }
+            document.getElementById('formLuar').style.display = jenis === 'Luar' ? 'block' : 'none';
+            document.getElementById('formProduksi').style.display = jenis === 'Produksi' ? 'block' : 'none';
         }
 
         function bukaModal(mode, id = '', nama = '', stok = '', harga = '', batas = '10', jenis = 'Luar', modalVal = '0', biayaVal = '0') {
             modalUtama.style.display = 'flex';
-            document.getElementById('mId').value = id;
-            document.getElementById('mNama').value = nama;
-            document.getElementById('mStok').value = stok;
-            document.getElementById('mBatas').value = batas; 
-            document.getElementById('mHarga').value = harga;
-            document.getElementById('mJenis').value = jenis;
-            document.getElementById('mModal').value = modalVal;
-            document.getElementById('mBiaya').value = biayaVal;
+            document.getElementById('mId').value = id; document.getElementById('mNama').value = nama;
+            document.getElementById('mStok').value = stok; document.getElementById('mBatas').value = batas; 
+            document.getElementById('mHarga').value = harga; document.getElementById('mJenis').value = jenis;
+            document.getElementById('mModal').value = modalVal; document.getElementById('mBiaya').value = biayaVal;
             ubahTampilanForm(); 
             document.getElementById('mTitle').innerText = mode === 'edit' ? 'Edit Produk' : 'Tambah Produk Baru';
-            document.getElementById('mBtn').innerText = mode === 'edit' ? 'Simpan Perubahan' : 'Simpan Produk';
         }
 
-        // BUKA MODAL PRIVE BARANG (BIRU)
         function bukaModalPrive(id, nama, stokSekarang) {
             modalPrive.style.display = 'flex';
-            document.getElementById('pId').value = id;
-            document.getElementById('pStokAwal').value = stokSekarang;
-            document.getElementById('pNamaProduk').innerText = nama;
-            document.getElementById('pStokTeks').innerText = stokSekarang;
+            document.getElementById('pId').value = id; document.getElementById('pStokAwal').value = stokSekarang;
             document.getElementById('pJumlah').max = stokSekarang; 
         }
 
         function bukaModalRusak(id, nama, stokSekarang) {
             modalRusak.style.display = 'flex';
-            document.getElementById('rId').value = id;
-            document.getElementById('rStokAwal').value = stokSekarang;
-            document.getElementById('rNamaProduk').innerText = nama;
-            document.getElementById('rStokTeks').innerText = stokSekarang;
+            document.getElementById('rId').value = id; document.getElementById('rStokAwal').value = stokSekarang;
+            document.getElementById('rNamaProduk').innerText = nama; document.getElementById('rStokTeks').innerText = stokSekarang;
             document.getElementById('rJumlah').max = stokSekarang; 
+        }
+
+        // BUKA MODAL KOREKSI
+        function bukaModalKoreksi(id, nama, jumlahRusak) {
+            modalKoreksi.style.display = 'flex';
+            document.getElementById('kId').value = id; 
+            document.getElementById('kNamaProduk').innerText = nama; 
+            document.getElementById('kStokRusakTeks').innerText = jumlahRusak;
+            document.getElementById('kJumlah').max = jumlahRusak; 
         }
 
         function bukaModalStokCepat(id, nama) {
             modalStokCepat.style.display = 'flex';
             document.getElementById('cId').value = id;
-            document.getElementById('cNamaProduk').innerText = nama;
         }
 
         function tutupModal(idModal) { document.getElementById(idModal).style.display = 'none'; }
@@ -524,6 +522,7 @@ if (isset($_POST['proses_tambah_cepat'])) {
             if (event.target == modalRusak) tutupModal('modalRusak'); 
             if (event.target == modalPrive) tutupModal('modalPrive'); 
             if (event.target == modalStokCepat) tutupModal('modalStokCepat');
+            if (event.target == modalKoreksi) tutupModal('modalKoreksi');
         }
     </script>
 </body>
