@@ -96,10 +96,7 @@ if ($view == 'bulan') {
     $w_tgl = "tanggal = '$hari_ini'";
 }
 
-// =========================================================================
-// LOGIKA BARU: MENGHITUNG BERDASARKAN KATEGORI BUKU KAS & PIUTANG
-// =========================================================================
-// 1. Laba Kotor
+
 $q_v_penjualan = mysqli_query($koneksi, "
     SELECT SUM(d.subtotal - (d.jumlah_produk * IF(p.jenis_produk = 'Luar', p.modal, p.hpp))) as laba_kotor
     FROM transaksi t JOIN detail_transaksi d ON t.id_transaksi = d.id_transaksi JOIN produk p ON d.id_produk = p.id_produk
@@ -153,11 +150,11 @@ $v_piutang = mysqli_fetch_assoc($q_kasbon)['piutang'] ?? 0;
 if($v_piutang < 0) $v_piutang = 0; // Memastikan tidak error
 
 // Final Kalkulasi
-$v_laba_bersih = $v_laba_kotor - $v_pengeluaran - $v_rusak;
-$v_total_prive = $v_prive_uang + $v_prive_barang;
+$v_total_prive = $v_prive_uang + $v_prive_barang; 
 
-// UANG FISIK (Sisa Uang di Laci) = Laba Bersih - Prive(Uang/Barang) - Uang yang belum dibayar pelanggan(Piutang)
-$v_sisa_kekayaan = $v_laba_bersih - $v_total_prive - $v_piutang; 
+
+$v_laba_bersih = $v_laba_kotor - $v_pengeluaran - $v_rusak - $v_total_prive; 
+$v_sisa_kekayaan = $v_laba_bersih - $v_piutang;
 ?>
 
 <!DOCTYPE html>
@@ -274,7 +271,7 @@ $v_sisa_kekayaan = $v_laba_bersih - $v_total_prive - $v_piutang;
 
     <div class="card-bersih">
         <p style="font-weight: bold; letter-spacing: 1px; text-transform: uppercase;">Laba Bersih Pembukuan (Net Profit)</p>
-        <small style="color:#ddd;">Laba Kotor - Biaya Operasional - Kerugian Barang Rusak</small>
+        <small style="color:#ddd;">Laba Kotor - Biaya Operasional - Kerugian Barang Rusak - Total Prive</small>
         <h1>Rp <?= number_format($v_laba_bersih, 0, ',', '.') ?></h1>
         <div style="margin-top:10px; background:rgba(255,255,255,0.15); display:inline-block; padding:8px 15px; border-radius:20px; font-size:0.95em;">
             Estimasi Uang Cash Fisik (Dipotong Prive & Orang Ngutang/Kasbon): <strong style="color: #f1c40f;">Rp <?= number_format($v_sisa_kekayaan, 0, ',', '.') ?></strong>

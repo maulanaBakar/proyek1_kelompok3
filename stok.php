@@ -132,27 +132,39 @@ if (isset($_POST['koreksi_rusak'])) {
 }
 
 // --- PROSES KONSUMSI PRIBADI (PRIVE BARANG) ---
-if (isset($_POST['prive_barang'])) {
-    $id_produk    = mysqli_real_escape_string($koneksi, $_POST['id_produk_prive']);
-    $jumlah_prive = (int)$_POST['jumlah_prive'];
-    $keterangan   = mysqli_real_escape_string($koneksi, $_POST['keterangan_prive']);
-    $stok_awal    = (int)$_POST['stok_awal_prive'];
-    $tanggal      = date('Y-m-d');
+if (isset($_POST['prive_barang']) || isset($_POST['simpan_prive'])) {
+    
+    $id_produk    = mysqli_real_escape_string($koneksi, $_POST['id_produk_prive'] ?? $_POST['id_produk']);
+    $jumlah_prive = (int)($_POST['jumlah_prive'] ?? $_POST['jumlah']);
+    $keterangan   = mysqli_real_escape_string($koneksi, $_POST['keterangan_prive'] ?? $_POST['keterangan']);
+    
+    // Stok awal (jika ada) untuk validasi agar tidak minus
+    $stok_awal = isset($_POST['stok_awal_prive']) ? (int)$_POST['stok_awal_prive'] : 99999;
+    $tanggal   = date('Y-m-d');
     
     if ($jumlah_prive > $stok_awal) {
         echo "<script>alert('Gagal: Jumlah yang diambil melebihi sisa stok!'); window.history.back();</script>";
         exit;
     } else {
+        // Ambil data harga dari produk
         $cek_harga = mysqli_query($koneksi, "SELECT jenis_produk, modal, hpp FROM produk WHERE id_produk = '$id_produk'");
         $data_harga = mysqli_fetch_assoc($cek_harga);
+        
+        // Pilih harga berdasarkan jenisnya (agar nilai prive tidak Rp 0)
         $harga_satuan = ($data_harga['jenis_produk'] == 'Luar') ? $data_harga['modal'] : $data_harga['hpp'];
+        
+        // Hitung total nilai prive (kerugian)
         $total_hpp = $jumlah_prive * $harga_satuan;
 
+        // Kurangi Stok
         $query_stok = "UPDATE produk SET stok = stok - $jumlah_prive WHERE id_produk = '$id_produk'";
         if (mysqli_query($koneksi, $query_stok)) {
+            
+            // Insert data prive dengan nilai $total_hpp yang sudah dihitung
             mysqli_query($koneksi, "INSERT INTO prive_barang (tanggal, id_produk, jumlah, total_hpp, keterangan) 
                                     VALUES ('$tanggal', '$id_produk', '$jumlah_prive', '$total_hpp', '$keterangan')");
-            echo "<script>alert('Mantap! Konsumsi pribadi berhasil dicatat. Stok berkurang namun tidak masuk ke Kerugian Toko.'); window.location='stok.php';</script>";
+                                    
+            echo "<script>alert('Prive berhasil dicatat!'); window.location='stok.php';</script>";
             exit;
         }
     }
