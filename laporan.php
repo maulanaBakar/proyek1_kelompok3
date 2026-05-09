@@ -97,7 +97,7 @@ if ($view == 'bulan') {
 }
 
 // =========================================================================
-// LOGIKA BARU: MENGHITUNG BERDASARKAN KATEGORI BUKU KAS
+// LOGIKA BARU: MENGHITUNG BERDASARKAN KATEGORI BUKU KAS & PIUTANG
 // =========================================================================
 // 1. Laba Kotor
 $q_v_penjualan = mysqli_query($koneksi, "
@@ -125,18 +125,39 @@ while($rk = mysqli_fetch_assoc($q_kas)){
     }
 }
 
-// 3. Barang Rusak
-$q_v_rusak = mysqli_query($koneksi, "SELECT SUM(nilai_kerugian) as total FROM riwayat_kerugian WHERE $w_tgl");
+// 3. Barang Rusak (Hitung Dinamis)
+$q_v_rusak = mysqli_query($koneksi, "
+    SELECT SUM(r.jumlah_rusak * IF(p.jenis_produk = 'Luar', p.modal, p.hpp)) as total 
+    FROM riwayat_kerugian r 
+    JOIN produk p ON r.id_produk = p.id_produk 
+    WHERE $w_tgl
+");
 $v_rusak = mysqli_fetch_assoc($q_v_rusak)['total'] ?? 0;
 
-// 4. Prive Barang
-$q_v_prive_barang = mysqli_query($koneksi, "SELECT SUM(total_hpp) as total FROM prive_barang WHERE $w_tgl");
+// 4. Prive Barang (Hitung Dinamis)
+$q_v_prive_barang = mysqli_query($koneksi, "
+    SELECT SUM(pr.jumlah * IF(p.jenis_produk = 'Luar', p.modal, p.hpp)) as total 
+    FROM prive_barang pr 
+    JOIN produk p ON pr.id_produk = p.id_produk 
+    WHERE $w_tgl
+");
 $v_prive_barang = mysqli_fetch_assoc($q_v_prive_barang)['total'] ?? 0;
+
+// 5. Kasbon / Piutang (Menghitung Total Transaksi - Uang yang diterima)
+$q_kasbon = mysqli_query($koneksi, "
+    SELECT SUM(t.total_pendapatan - t.uang_diterima) as piutang 
+    FROM transaksi t
+    WHERE t.uang_diterima < t.total_pendapatan AND $w_trx
+");
+$v_piutang = mysqli_fetch_assoc($q_kasbon)['piutang'] ?? 0;
+if($v_piutang < 0) $v_piutang = 0; // Memastikan tidak error
 
 // Final Kalkulasi
 $v_laba_bersih = $v_laba_kotor - $v_pengeluaran - $v_rusak;
 $v_total_prive = $v_prive_uang + $v_prive_barang;
-$v_sisa_kekayaan = $v_laba_bersih - $v_total_prive;
+
+// UANG FISIK (Sisa Uang di Laci) = Laba Bersih - Prive(Uang/Barang) - Uang yang belum dibayar pelanggan(Piutang)
+$v_sisa_kekayaan = $v_laba_bersih - $v_total_prive - $v_piutang; 
 ?>
 
 <!DOCTYPE html>
@@ -151,7 +172,6 @@ $v_sisa_kekayaan = $v_laba_bersih - $v_total_prive;
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     
     <style>
-        /* TAMPILAN TETAP SEPERTI ASLI KAKAK */
         .grid-laporan { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; margin-top: 10px; }
         .card-lap { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); text-align: center; border-bottom: 4px solid #eee; }
         .card-lap h4 { margin: 0 0 10px 0; color: #666; font-size: 0.85em; text-transform: uppercase; font-weight: 800;}
@@ -161,6 +181,7 @@ $v_sisa_kekayaan = $v_laba_bersih - $v_total_prive;
         .c-keluar { border-color: #e67e22; } .c-keluar h2 { color: #e67e22; }
         .c-rusak { border-color: #e74c3c; } .c-rusak h2 { color: #e74c3c; }
         .c-prive { border-color: #9b59b6; } .c-prive h2 { color: #9b59b6; }
+        .c-kasbon { border-color: #f39c12; } .c-kasbon h2 { color: #f39c12; } /* Warna Piutang Kasbon */
         
         .card-bersih { background: var(--primary, #4a3e3d); color: white; padding: 25px; border-radius: 12px; text-align: center; margin-bottom: 25px; box-shadow: 0 6px 15px rgba(0,0,0,0.1);}
         .card-bersih h1 { margin: 10px 0; font-size: 2.2em; color: #2ecc71; text-shadow: 0 2px 4px rgba(0,0,0,0.2);}
@@ -178,8 +199,6 @@ $v_sisa_kekayaan = $v_laba_bersih - $v_total_prive;
             <a href="buku_kas.php" class="link-menu"><i class="fa-solid fa-wallet"></i> Buku Kas</a>
             <a href="laporan.php" class="link-menu aktif"><i class="fa-solid fa-file-lines"></i> Laporan</a>
             <a href="pengaturan.php" class="link-menu"><i class="fa-solid fa-gear"></i> Pengaturan</a>
-        </nav>
-    </div>
         </nav>
     </div>
     <div class="bagian-bawah">
@@ -227,7 +246,7 @@ $v_sisa_kekayaan = $v_laba_bersih - $v_total_prive;
     </div>
 
     <h3 style="color: #4a3e3d; margin-top: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
-        <i class="fa-solid fa-chart-pie"></i> Analisis Laba Rugi (Sesuai Periode)
+        <i class="fa-solid fa-chart-pie"></i> Analisis Laba Rugi & Aset (Sesuai Periode)
     </h3>
     
     <div class="grid-laporan">
@@ -236,25 +255,29 @@ $v_sisa_kekayaan = $v_laba_bersih - $v_total_prive;
             <h2>Rp <?= number_format($v_laba_kotor, 0, ',', '.') ?></h2>
         </div>
         <div class="card-lap c-keluar">
-            <h4><i class="fa-solid fa-money-bill-transfer"></i> Biaya Operasional</h4>
+            <h4><i class="fa-solid fa-money-bill-transfer"></i> Operasional</h4>
             <h2>Rp <?= number_format($v_pengeluaran, 0, ',', '.') ?></h2>
         </div>
         <div class="card-lap c-rusak">
-            <h4><i class="fa-solid fa-triangle-exclamation"></i> Barang Rusak</h4>
+            <h4><i class="fa-solid fa-triangle-exclamation"></i> Kerugian Rusak</h4>
             <h2>Rp <?= number_format($v_rusak, 0, ',', '.') ?></h2>
         </div>
         <div class="card-lap c-prive">
-            <h4><i class="fa-solid fa-hand-holding-heart"></i> Total Prive (Ambil)</h4>
+            <h4><i class="fa-solid fa-hand-holding-heart"></i> Total Prive</h4>
             <h2>Rp <?= number_format($v_total_prive, 0, ',', '.') ?></h2>
+        </div>
+        <div class="card-lap c-kasbon">
+            <h4><i class="fa-solid fa-file-invoice-dollar"></i> Piutang Kasbon</h4>
+            <h2>Rp <?= number_format($v_piutang, 0, ',', '.') ?></h2>
         </div>
     </div>
 
     <div class="card-bersih">
-        <p style="font-weight: bold; letter-spacing: 1px; text-transform: uppercase;">Laba Bersih Usaha (Net Profit)</p>
+        <p style="font-weight: bold; letter-spacing: 1px; text-transform: uppercase;">Laba Bersih Pembukuan (Net Profit)</p>
         <small style="color:#ddd;">Laba Kotor - Biaya Operasional - Kerugian Barang Rusak</small>
         <h1>Rp <?= number_format($v_laba_bersih, 0, ',', '.') ?></h1>
-        <div style="margin-top:10px; background:rgba(255,255,255,0.15); display:inline-block; padding:8px 15px; border-radius:20px; font-size:0.9em;">
-            Sisa Uang/Aset Real setelah Prive: <strong>Rp <?= number_format($v_sisa_kekayaan, 0, ',', '.') ?></strong>
+        <div style="margin-top:10px; background:rgba(255,255,255,0.15); display:inline-block; padding:8px 15px; border-radius:20px; font-size:0.95em;">
+            Estimasi Uang Cash Fisik (Dipotong Prive & Orang Ngutang/Kasbon): <strong style="color: #f1c40f;">Rp <?= number_format($v_sisa_kekayaan, 0, ',', '.') ?></strong>
         </div>
     </div>
 
@@ -272,7 +295,7 @@ $v_sisa_kekayaan = $v_laba_bersih - $v_total_prive;
                     <?php else: ?>
                         <tr>
                             <th>ID Transaksi</th>
-                            <th>Waktu</th>
+                            <th>Waktu / Kasbon</th>
                             <th>Pendapatan</th>
                             <th>Laba Kotor</th>
                             <th style="text-align: center;">Aksi</th> 
@@ -295,9 +318,12 @@ $v_sisa_kekayaan = $v_laba_bersih - $v_total_prive;
                             $link = "?view=custom&start_date={$row['thn']}-01-01&end_date={$row['thn']}-12-31";
                             echo "<tr><td><strong>{$row['thn']}</strong></td><td>{$row['jml']} TRX</td><td>Rp ".number_format($pendapatan,0,',','.')."</td><td>Rp ".number_format($laba_kotor_row,0,',','.')."</td><td><a href='$link' class='badge-link'>Lihat</a></td></tr>";
                         } else {
+                            // Cek jika kasbon
+                           // Cek jika kasbon
+$label_kasbon = ($row['uang_diterima'] < $pendapatan) ? "<br><span style='font-size:0.8em; color:#e74c3c; font-weight:bold;'>BELUM LUNAS: Rp ".number_format($pendapatan - $row['uang_diterima'],0,',','.')."</span>" : "";
                             echo "<tr>
                                 <td><button onclick='showDetail({$row['id_transaksi']})' class='btn-trx'>#TRX_{$row['id_transaksi']}</button></td>
-                                <td>".date('d M Y H:i', strtotime($row['tanggal_transaksi']))."</td>
+                                <td>".date('d M Y H:i', strtotime($row['tanggal_transaksi'])).$label_kasbon."</td>
                                 <td>Rp ".number_format($pendapatan,0,',','.')."</td>
                                 <td>Rp ".number_format($laba_kotor_row,0,',','.')."</td>
                                 <td style='text-align: center;'>
@@ -312,6 +338,101 @@ $v_sisa_kekayaan = $v_laba_bersih - $v_total_prive;
             </table>
         </div>
     </div>
+
+    <div class="report-card" style="margin-top: 30px;">
+        <div class="table-header" style="border-bottom: 2px solid #e74c3c;">
+            <h3 style="color: #e74c3c;"><i class="fa-solid fa-circle-exclamation"></i> Detail Barang Rusak</h3>
+        </div>
+
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>Nama Produk</th>
+                        <th style="text-align: center;">Jumlah</th>
+                        <th>Nilai Kerugian</th>
+                        <th>Keterangan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php
+                $q_detail_rusak = mysqli_query($koneksi, "
+                    SELECT r.*, p.nama_produk, p.jenis_produk, p.modal, p.hpp 
+                    FROM riwayat_kerugian r JOIN produk p ON r.id_produk = p.id_produk 
+                    WHERE $w_tgl ORDER BY r.tanggal DESC
+                ");
+
+                if(mysqli_num_rows($q_detail_rusak) > 0) {
+                    while($row = mysqli_fetch_assoc($q_detail_rusak)) {
+                        $is_koreksi = $row['jumlah_rusak'] < 0;
+                        $tanda_koreksi = $is_koreksi ? "<span style='color:#2ecc71; font-weight:bold;'>Koreksi: " : "<span style='color:#e74c3c; font-weight:bold;'>";
+                        
+                        // Kalkulasi manual nilai kerugian
+                        $harga_modal = ($row['jenis_produk'] == 'Luar') ? $row['modal'] : $row['hpp'];
+                        $nilai_kerugian_asli = abs($row['jumlah_rusak']) * $harga_modal;
+
+                        echo "<tr>
+                            <td>".date('d/m/Y', strtotime($row['tanggal']))."</td>
+                            <td><strong>".htmlspecialchars($row['nama_produk'])."</strong></td>
+                            <td style='text-align:center;'>".$tanda_koreksi.$row['jumlah_rusak']." Pcs</span></td>
+                            <td>Rp ".number_format($nilai_kerugian_asli, 0, ',', '.')."</td>
+                            <td><small>".htmlspecialchars($row['keterangan'])."</small></td>
+                        </tr>";
+                    }
+                } else { echo "<tr><td colspan='5' style='text-align:center; padding:20px; color:#888;'>Tidak ada riwayat kerusakan pada periode ini.</td></tr>"; }
+                ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="report-card" style="margin-top: 30px;">
+        <div class="table-header" style="border-bottom: 2px solid #9b59b6;">
+            <h3 style="color: #9b59b6;"><i class="fa-solid fa-hand-holding-heart"></i> Detail Keperluan Lain / Prive Barang</h3>
+        </div>
+
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>Nama Produk</th>
+                        <th style="text-align: center;">Jumlah Ambil</th>
+                        <th>Nilai Modal Keluar (Prive)</th>
+                        <th>Untuk Siapa / Keterangan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php
+                $q_detail_prive = mysqli_query($koneksi, "
+                    SELECT pr.*, p.nama_produk, p.jenis_produk, p.modal, p.hpp 
+                    FROM prive_barang pr JOIN produk p ON pr.id_produk = p.id_produk 
+                    WHERE $w_tgl ORDER BY pr.tanggal DESC
+                ");
+
+                if(mysqli_num_rows($q_detail_prive) > 0) {
+                    while($rp = mysqli_fetch_assoc($q_detail_prive)) {
+                        
+                        // Kalkulasi manual nilai prive
+                        $harga_modal_prive = ($rp['jenis_produk'] == 'Luar') ? $rp['modal'] : $rp['hpp'];
+                        $nilai_prive_asli = $rp['jumlah'] * $harga_modal_prive;
+
+                        echo "<tr>
+                            <td>".date('d/m/Y', strtotime($rp['tanggal']))."</td>
+                            <td><strong>".htmlspecialchars($rp['nama_produk'])."</strong></td>
+                            <td style='text-align:center;'><span style='color:#9b59b6; font-weight:bold;'>".$rp['jumlah']." Pcs</span></td>
+                            <td>Rp ".number_format($nilai_prive_asli, 0, ',', '.')."</td>
+                            <td><small>".htmlspecialchars($rp['keterangan'])."</small></td>
+                        </tr>";
+                    }
+                } else { echo "<tr><td colspan='5' style='text-align:center; padding:20px; color:#888;'>Tidak ada pengambilan barang (Prive) pada periode ini.</td></tr>"; }
+                ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
 </main>
 
 <div id="myModal" class="modal">
