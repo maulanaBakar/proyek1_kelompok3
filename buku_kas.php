@@ -33,10 +33,18 @@ $q_laba = mysqli_query($koneksi, "
 $d_laba = mysqli_fetch_assoc($q_laba);
 $laba_hari_ini = $d_laba['laba_kotor'] ?? 0;
 
-// Menghitung Saldo Kas Sistem
-$m = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT SUM(nominal) as t FROM buku_kas WHERE jenis='Pemasukan'"))['t'] ?? 0;
-$k = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT SUM(nominal) as t FROM buku_kas WHERE jenis='Pengeluaran'"))['t'] ?? 0;
-$saldo_sistem = $m - $k;
+// ==========================================
+// Menghitung Saldo Kas 
+// ==========================================
+// 1. Ambil Total Uang dari Transaksi Kasir Hari Ini
+$q_kasir = mysqli_query($koneksi, "SELECT SUM(total_pendapatan - kurang_bayar) as total_cash FROM transaksi WHERE DATE(tanggal_transaksi) = '$hari_ini'");
+$pendapatan_kasir = mysqli_fetch_assoc($q_kasir)['total_cash'] ?? 0;
+// 2. Ambil Pemasukan & Pengeluaran dari Buku Kas Hari Ini
+$m = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT SUM(nominal) as t FROM buku_kas WHERE jenis='Pemasukan' AND DATE(tanggal) = '$hari_ini'"))['t'] ?? 0;
+$k = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT SUM(nominal) as t FROM buku_kas WHERE jenis='Pengeluaran' AND DATE(tanggal) = '$hari_ini'"))['t'] ?? 0;
+
+// 3. Saldo Sistem = Uang Penjualan + Pemasukan - Pengeluaran
+$saldo_sistem = $pendapatan_kasir + $m - $k;
 
 // ==========================================
 // 1. LOGIKA BUKU KAS (Pemasukan/Pengeluaran + Kategori)
@@ -173,8 +181,6 @@ $tab = isset($_GET['tab']) ? $_GET['tab'] : 'kas';
             <a href="pengaturan.php" class="link-menu"><i class="fa-solid fa-gear"></i> Pengaturan</a>
         </nav>
     </div>
-        </nav>
-    </div>
     <div class="bagian-bawah">
         <a href="logout.php" class="link-menu keluar"><i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar</a>
     </div>
@@ -245,7 +251,7 @@ $tab = isset($_GET['tab']) ? $_GET['tab'] : 'kas';
         </div>
 
         <div class="kotak-putih">
-            <h3 class="judul-sub" style="margin-top: 0;">Riwayat Kas Terakhir</h3>
+            <h3 class="judul-sub" style="margin-top: 0;">Riwayat Kas Hari Ini</h3>
             <table style="width: 100%; border-collapse: collapse;">
                 <thead>
                     <tr style="border-bottom: 2px solid #eee; text-align: left;">
@@ -258,7 +264,8 @@ $tab = isset($_GET['tab']) ? $_GET['tab'] : 'kas';
                 </thead>
                 <tbody>
                     <?php
-                    $q = mysqli_query($koneksi, "SELECT * FROM buku_kas ORDER BY tanggal DESC LIMIT 50");
+                    // HANYA MENAMPILKAN RIWAYAT HARI INI
+                    $q = mysqli_query($koneksi, "SELECT * FROM buku_kas WHERE DATE(tanggal) = '$hari_ini' ORDER BY tanggal DESC");
                     while($row = mysqli_fetch_assoc($q)){
                         $isM = $row['jenis'] == 'Pemasukan';
                     ?>

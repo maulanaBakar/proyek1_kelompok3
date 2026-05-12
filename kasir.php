@@ -76,12 +76,33 @@ if(isset($_GET['aksi'])) {
     elseif($aksi == "clear") {
         $_SESSION['keranjang'] = [];
         header("location:kasir.php"); exit;
-    }
+    
+    }elseif($aksi == "update") {
+
+        $qty_baru = isset($_GET['qty']) ? (int)$_GET['qty'] : 1;
+        if($qty_baru < 1) $qty_baru = 1;
+
+        // Cek stok barang di database
+        $data = mysqli_query($koneksi, "SELECT stok FROM produk WHERE id_produk='$id'");
+        $p = mysqli_fetch_assoc($data);
+
+        if($p) {
+            if($qty_baru <= $p['stok']) {
+                $_SESSION['keranjang'][$id]['qty'] = $qty_baru;
+            } else {
+                // Jika yang diketik melebihi stok, set ke stok maksimal
+                $_SESSION['keranjang'][$id]['qty'] = $p['stok'];
+                echo "<script>alert('Stok tidak mencukupi! Sisa stok: " . $p['stok'] . "'); window.location='kasir.php';</script>";
+                exit();
+            }
+        }
+        
+        header("location:kasir.php"); exit;
 
     // ==========================================
     // LOGIKA HOLD (TAHAN) & LOAD TRANSAKSI
     // ==========================================
-    elseif($aksi == "load_hold") {
+    }elseif($aksi == "load_hold") {
         $id_hold = $_GET['id_hold'];
         if(isset($_SESSION['hold_keranjang'][$id_hold])) {
             // Kosongkan keranjang saat ini, ganti dengan yang di-hold
@@ -119,7 +140,7 @@ if (isset($_POST['proses_hold'])) {
 }
 
 // ==========================================
-// PROSES BAYAR (CHECKOUT) - SUDAH DIPERBAIKI SESUAI DB ASLI
+// PROSES BAYAR (CHECKOUT)
 // ==========================================
 if(isset($_POST['bayar'])) {
     if(empty($_SESSION['keranjang'])) {
@@ -160,7 +181,7 @@ if(isset($_POST['bayar'])) {
         $status_bayar = 'Kasbon';
     }
 
-    // Insert ke tabel transaksi DENGAN KOLOM YANG BENAR!
+    // Insert ke tabel transaksi
     $query_transaksi = "INSERT INTO transaksi 
                         (tanggal_transaksi, nama_pelanggan, total_pendapatan, uang_diterima, status_bayar, status_transaksi, diskon_global, kurang_bayar) 
                         VALUES 
@@ -211,7 +232,7 @@ if(isset($_POST['bayar'])) {
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Kasir Pintar | 2 Paksi</title>
+    <title>Kasir | 2 Paksi</title>
     <link rel="stylesheet" href="css/dashboard.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
@@ -232,6 +253,7 @@ if(isset($_POST['bayar'])) {
         .item-keranjang { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f9f9f9; }
         .item-info h5 { margin: 0; font-size: 0.95em; }
         .item-info p { margin: 0; font-size: 0.85em; color: #666; }
+        
         .qty-control { display: flex; align-items: center; gap: 10px; }
         .qty-control a { text-decoration: none; width: 25px; height: 25px; display: flex; justify-content: center; align-items: center; background: #f1f1f1; border-radius: 4px; color: #333; font-weight: bold; }
         .qty-control a:hover { background: var(--cokelat-muda); color: white; }
@@ -260,6 +282,23 @@ if(isset($_POST['bayar'])) {
         .modal-konten { background: white; padding: 20px; border-radius: 10px; width: 400px; max-width: 90%; }
         .tabel-hold { width: 100%; border-collapse: collapse; margin-top: 10px; }
         .tabel-hold th, .tabel-hold td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+
+        /* Style Input Qty */
+        .input-qty { 
+            width: 40px; 
+            text-align: center; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            padding: 4px; 
+            font-weight: bold; 
+            font-size: 0.9em;
+            -moz-appearance: textfield;
+        }
+        .input-qty::-webkit-outer-spin-button, 
+        .input-qty::-webkit-inner-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
     </style>
 </head>
 <body>
@@ -344,7 +383,7 @@ if(isset($_POST['bayar'])) {
                             </div>
                             <div class="qty-control">
                                 <a href="kasir.php?aksi=min&id_produk=<?= $id ?>">-</a>
-                                <span><?= $item['qty'] ?></span>
+                                <input type="number" class="input-qty" value="<?= $item['qty'] ?>" min="1" onchange="updateQty('<?= $id ?>', this.value)">
                                 <a href="kasir.php?aksi=plus&id_produk=<?= $id ?>">+</a>
                                 <a href="kasir.php?aksi=hapus&id_produk=<?= $id ?>" style="background: #ffcccc; color: #e74c3c;"><i class="fa-solid fa-trash"></i></a>
                             </div>
@@ -535,6 +574,14 @@ if(isset($_POST['bayar'])) {
             d.value = unformatRupiah(d.value);
             if(u.value !== "") u.value = unformatRupiah(u.value);
             return true;
+        }
+        
+        // Fungsi untuk mengirim jumlah yang diketik manual ke PHP
+        function updateQty(idProduk, qtyBaru) {
+            if(qtyBaru < 1 || isNaN(qtyBaru)) {
+                qtyBaru = 1; // Cegah input minus atau huruf
+            }
+            window.location.href = 'kasir.php?aksi=update&id_produk=' + idProduk + '&qty=' + qtyBaru;
         }
 
         // Script Modals

@@ -16,23 +16,46 @@ $bulan_ini = date('m');
 $tahun_ini = date('Y');
 
 // ====================================================
-// FITUR VOID: BATALKAN TRANSAKSI
+// FITUR VOID: BATALKAN TRANSAKSI 
 // ====================================================
 if (isset($_GET['void'])) {
     $id_trx = mysqli_real_escape_string($koneksi, $_GET['void']);
 
-    $q_detail = mysqli_query($koneksi, "SELECT id_produk, jumlah_produk FROM detail_transaksi WHERE id_transaksi = '$id_trx'");
-    while ($d = mysqli_fetch_assoc($q_detail)) {
-        $id_p = $d['id_produk'];
-        $qty = $d['jumlah_produk'];
-        mysqli_query($koneksi, "UPDATE produk SET stok = stok + $qty WHERE id_produk = '$id_p'");
+    // 1. Memulai Database Transaction (Locking) untuk mencegah data berantakan jika server error di tengah proses
+    mysqli_begin_transaction($koneksi);
+
+    try {
+        // 2. Kembalikan stok produk ke etalase
+        $q_detail = mysqli_query($koneksi, "SELECT id_produk, jumlah_produk FROM detail_transaksi WHERE id_transaksi = '$id_trx'");
+        while ($d = mysqli_fetch_assoc($q_detail)) {
+            $id_p = $d['id_produk'];
+            $qty = $d['jumlah_produk'];
+            mysqli_query($koneksi, "UPDATE produk SET stok = stok + $qty WHERE id_produk = '$id_p'");
+        }
+
+        // 3. Hapus data produk dari detail_transaksi
+        mysqli_query($koneksi, "DELETE FROM detail_transaksi WHERE id_transaksi = '$id_trx'");
+
+        // 4. PERBAIKAN BUG: Hapus data keuangan yang terlanjur masuk di tabel buku_kas
+        // Menghapus data kas berdasarkan ID transaksi (Asumsi keterangan kas mengandung ID transaksi, misal "TRX_123" atau "Transaksi 123")
+        mysqli_query($koneksi, "DELETE FROM buku_kas WHERE keterangan LIKE '%$id_trx%'");
+
+        // 5. Hapus data dari tabel transaksi utama
+        mysqli_query($koneksi, "DELETE FROM transaksi WHERE id_transaksi = '$id_trx'");
+
+        // 6. Jika SEMUA proses di atas sukses tanpa error, simpan perubahan secara permanen (Commit)
+        mysqli_commit($koneksi);
+
+        echo "<script>alert('Transaksi #TRX_$id_trx berhasil dibatalkan. Stok dan Saldo Buku Kas telah dikoreksi!'); window.location='laporan.php';</script>";
+        exit;
+
+    } catch (Exception $e) {
+        // 7. Jika ada salah satu query yang gagal, kembalikan semua data seperti semula (Rollback)
+        mysqli_rollback($koneksi);
+        
+        echo "<script>alert('Gagal membatalkan transaksi: " . $e->getMessage() . "'); window.location='laporan.php';</script>";
+        exit;
     }
-
-    mysqli_query($koneksi, "DELETE FROM detail_transaksi WHERE id_transaksi = '$id_trx'");
-    mysqli_query($koneksi, "DELETE FROM transaksi WHERE id_transaksi = '$id_trx'");
-
-    echo "<script>alert('Transaksi #TRX_$id_trx berhasil dibatalkan. Stok barang telah dikembalikan ke etalase!'); window.location='laporan.php';</script>";
-    exit;
 }
 
 // --- LOGIKA FILTER PERIODE ---
