@@ -75,10 +75,10 @@ if(isset($_GET['aksi'])) {
     
     elseif($aksi == "clear") {
         $_SESSION['keranjang'] = [];
+        unset($_SESSION['pelanggan_aktif']); // Bersihkan nama pelanggan jika batal
         header("location:kasir.php"); exit;
     
     }elseif($aksi == "update") {
-
         $qty_baru = isset($_GET['qty']) ? (int)$_GET['qty'] : 1;
         if($qty_baru < 1) $qty_baru = 1;
 
@@ -107,6 +107,10 @@ if(isset($_GET['aksi'])) {
         if(isset($_SESSION['hold_keranjang'][$id_hold])) {
             // Kosongkan keranjang saat ini, ganti dengan yang di-hold
             $_SESSION['keranjang'] = $_SESSION['hold_keranjang'][$id_hold]['keranjang'];
+            
+            // SIMPAN NAMA PELANGGAN KE SESSION AGAR BISA DITAMPILKAN
+            $_SESSION['pelanggan_aktif'] = $_SESSION['hold_keranjang'][$id_hold]['nama']; 
+            
             unset($_SESSION['hold_keranjang'][$id_hold]); // Hapus dari daftar hold
             echo "<script>alert('Berhasil! Transaksi dilanjutkan.'); window.location='kasir.php';</script>";
             exit;
@@ -134,6 +138,8 @@ if (isset($_POST['proses_hold'])) {
         ];
         
         $_SESSION['keranjang'] = []; // Kosongkan layar kasir
+        unset($_SESSION['pelanggan_aktif']); // Hapus pelanggan aktif jika ada (reset layar)
+        
         echo "<script>alert('Sip! Transaksi atas nama $nama_pelanggan_hold ditahan.'); window.location='kasir.php';</script>";
         exit;
     }
@@ -218,7 +224,8 @@ if(isset($_POST['bayar'])) {
                                    VALUES ('$tanggal', '$keterangan', 'Pemasukan', '$uang_masuk_kas')");
         }
 
-        $_SESSION['keranjang'] = []; //untuk mengosogkan kerangjang after transaksi
+        $_SESSION['keranjang'] = []; //kosongkan keranjang after transaksi
+        unset($_SESSION['pelanggan_aktif']); // HAPUS NAMA PELANGGAN SETELAH BAYAR
         
         $pesan = ($status_bayar == 'Kasbon') ? "Berhasil! Transaksi KASBON tersimpan." : "Pembayaran LUNAS Berhasil!";
         echo "<script>alert('$pesan'); window.location='kasir.php';</script>";
@@ -329,6 +336,13 @@ if(isset($_POST['bayar'])) {
         <div class="layout-kasir">
             
             <div class="kiri-produk">
+                <?php if(isset($_SESSION['pelanggan_aktif'])): ?>
+                <div style="background: #f39c12; color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
+                    <span><i class="fa-solid fa-user-clock"></i> Melanjutkan Transaksi Hold: <?= htmlspecialchars($_SESSION['pelanggan_aktif']) ?></span>
+                    <a href="kasir.php?aksi=clear" style="color: white; text-decoration: none; font-size: 0.9em; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 4px;"><i class="fa-solid fa-times"></i> Batal</a>
+                </div>
+                <?php endif; ?>
+
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <h3>Pilih Produk</h3>
                     <input type="text" id="cariProduk" placeholder="Cari nama..." style="padding:8px; border-radius:6px; border:1px solid #ccc;">
@@ -382,10 +396,10 @@ if(isset($_POST['bayar'])) {
                                 <p>Rp <?= number_format($item['harga'],0,',','.') ?></p>
                             </div>
                             <div class="qty-control">
-                                <a href="kasir.php?aksi=min&id_produk=<?= $id ?>">-</a>
+                                <a href="javascript:void(0);" onclick="confirmMin('<?= $id ?>', <?= $item['qty'] ?>)">-</a>
                                 <input type="number" class="input-qty" value="<?= $item['qty'] ?>" min="1" onchange="updateQty('<?= $id ?>', this.value)">
-                                <a href="kasir.php?aksi=plus&id_produk=<?= $id ?>">+</a>
-                                <a href="kasir.php?aksi=hapus&id_produk=<?= $id ?>" style="background: #ffcccc; color: #e74c3c;"><i class="fa-solid fa-trash"></i></a>
+                                    <a href="kasir.php?aksi=plus&id_produk=<?= $id ?>">+</a>
+                                <a href="javascript:void(0);" onclick="confirmHapus('<?= $id ?>')" style="background: #ffcccc; color: #e74c3c;"><i class="fa-solid fa-trash"></i></a>
                             </div>
                         </div>
                     <?php 
@@ -405,7 +419,6 @@ if(isset($_POST['bayar'])) {
                             <input type="text" name="diskon_global" id="diskonGlobal" value="0" class="input-kasir" style="width: 50%; margin:0; text-align:right;" onkeyup="formatRp(this); hitungKembalian();">
                         </div>
                         
-                       
                         <input type="hidden" id="totalBelanjaAwal" value="<?= $total ?>">
                         <input type="hidden" id="totalModalHPP" value="<?= $total_modal ?>">
 
@@ -414,7 +427,9 @@ if(isset($_POST['bayar'])) {
                             <span id="textGrandTotal">Rp <?= number_format($total,0,',','.') ?></span>
                         </div>
 
-                        <input type="text" name="nama_pelanggan" id="namaPelanggan" class="input-kasir" placeholder="Nama Pelanggan (Opsional / Wajib jika Kasbon)">
+                        <input type="text" name="nama_pelanggan" id="namaPelanggan" class="input-kasir" 
+                               value="<?= isset($_SESSION['pelanggan_aktif']) ? htmlspecialchars($_SESSION['pelanggan_aktif']) : '' ?>" 
+                               placeholder="Nama Pelanggan (Opsional / Wajib jika Kasbon)">
                         <input type="text" name="uang_diterima" id="uangDiterima" class="input-kasir" placeholder="Uang Diterima (Rp)" onkeyup="formatRp(this); hitungKembalian();">
                         
                         <div id="statusKembalian" style="text-align: center; font-weight: bold; padding: 10px; border-radius: 6px; margin-top: 5px;"></div>
@@ -493,58 +508,105 @@ if(isset($_POST['bayar'])) {
             });
         });
 
-        // Fungsi baru untuk konfirmasi pengurangan
-function confirmMin(id, qty) {
-    if (qty <= 1) {
-        if (confirm('Jumlah barang tinggal 1, yakin ingin menghapusnya dari keranjang?')) {
-            window.location.href = 'kasir.php?aksi=min&id_produk=' + id;
+        // Fungsi konfirmasi pengurangan
+        function confirmMin(id, qty) {
+            if (qty <= 1) {
+                if (confirm('Jumlah barang tinggal 1, yakin ingin menghapusnya dari keranjang?')) {
+                    window.location.href = 'kasir.php?aksi=min&id_produk=' + id;
+                }
+            } else {
+                window.location.href = 'kasir.php?aksi=min&id_produk=' + id;
+            }
         }
-    } else {
-        window.location.href = 'kasir.php?aksi=min&id_produk=' + id;
-    }
-}
 
-// Fungsi baru untuk konfirmasi hapus permanen
-function confirmHapus(id) {
-    if (confirm('Yakin ingin menghapus produk ini dari keranjang?')) {
-        window.location.href = 'kasir.php?aksi=hapus&id_produk=' + id;
-    }
-}
+        // Fungsi konfirmasi hapus permanen
+        function confirmHapus(id) {
+            if (confirm('Yakin ingin menghapus produk ini dari keranjang?')) {
+                window.location.href = 'kasir.php?aksi=hapus&id_produk=' + id;
+            }
+        }
 
-// Modifikasi hitungKembalian (Bagian Peringatan Rugi Dihapus)
-function hitungKembalian() {
-    let d_input = document.getElementById('diskonGlobal').value;
-    let u_input = document.getElementById('uangDiterima').value;
-    
-    let diskon = unformatRupiah(d_input);
-    let uang = unformatRupiah(u_input);
-    let totalAwal = parseInt(document.getElementById('totalBelanjaAwal').value) || 0;
-    
-    let grandTotal = totalAwal - diskon;
-    if(grandTotal < 0) grandTotal = 0;
+        // Hitung Kembalian
+        function hitungKembalian() {
+            let d_input = document.getElementById('diskonGlobal').value;
+            let u_input = document.getElementById('uangDiterima').value;
+            
+            let diskon = unformatRupiah(d_input);
+            let uang = unformatRupiah(u_input);
+            let totalAwal = parseInt(document.getElementById('totalBelanjaAwal').value) || 0;
+            
+            let grandTotal = totalAwal - diskon;
+            if(grandTotal < 0) grandTotal = 0;
 
-    document.getElementById('textGrandTotal').innerText = 'Rp ' + grandTotal.toLocaleString('id-ID');
+            document.getElementById('textGrandTotal').innerText = 'Rp ' + grandTotal.toLocaleString('id-ID');
 
-    // --- BAGIAN LABA KOTOR SUDAH DIHAPUS ---
+            let boxStatus = document.getElementById('statusKembalian');
+            if (u_input === "") {
+                boxStatus.innerHTML = ''; return;
+            }
 
-    let boxStatus = document.getElementById('statusKembalian');
-    if (u_input === "") {
-        boxStatus.innerHTML = ''; return;
-    }
+            let kembalian = uang - grandTotal;
+            if(kembalian < 0) {
+                boxStatus.style.background = '#fdedec';
+                boxStatus.style.color = '#e74c3c';
+                boxStatus.innerHTML = '⚠️ KASBON: Kurang Rp ' + Math.abs(kembalian).toLocaleString('id-ID');
+            } else {
+                boxStatus.style.background = '#e8f8f5';
+                boxStatus.style.color = '#27ae60';
+                boxStatus.innerHTML = '✅ KEMBALIAN: Rp ' + kembalian.toLocaleString('id-ID');
+            }
+        }
 
-    let kembalian = uang - grandTotal;
-    if(kembalian < 0) {
-        boxStatus.style.background = '#fdedec';
-        boxStatus.style.color = '#e74c3c';
-        boxStatus.innerHTML = '⚠️ KASBON: Kurang Rp ' + Math.abs(kembalian).toLocaleString('id-ID');
-        isKasbon = true;
-    } else {
-        boxStatus.style.background = '#e8f8f5';
-        boxStatus.style.color = '#27ae60';
-        boxStatus.innerHTML = '✅ KEMBALIAN: Rp ' + kembalian.toLocaleString('id-ID');
-        isKasbon = false;
-    }
-}
+        // ==========================================
+        // FUNGSI MODAL HOLD
+        // ==========================================
+        function bukaModalHold() {
+            document.getElementById('modalHold').style.display = 'flex';
+        }
+
+        function bukaModalDaftarHold() {
+            document.getElementById('modalDaftarHold').style.display = 'flex';
+        }
+
+        function tutupModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        // ==========================================
+        // FUNGSI UPDATE QTY MANUAL
+        // ==========================================
+        function updateQty(id, qty) {
+            window.location.href = 'kasir.php?aksi=update&id_produk=' + id + '&qty=' + qty;
+        }
+
+        // ==========================================
+        // FORMAT RUPIAH
+        // ==========================================
+        function formatRp(obj) {
+            let number_string = obj.value.replace(/[^,\d]/g, '').toString(),
+            split = number_string.split(','),
+            sisa = split[0].length % 3,
+            rupiah = split[0].substr(0, sisa),
+            ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+            
+            if(ribuan){
+                separator = sisa ? '.' : '';
+                rupiah += separator + ribuan.join('.');
+            }
+            obj.value = rupiah;
+        }
+
+        function unformatRupiah(str) {
+            return parseInt(str.replace(/[^0-9]/g, '')) || 0;
+        }
+
+        function bersihkanFormat() {
+            let uang = document.getElementById('uangDiterima').value;
+            let diskon = document.getElementById('diskonGlobal').value;
+            if(uang !== "") document.getElementById('uangDiterima').value = unformatRupiah(uang);
+            if(diskon !== "") document.getElementById('diskonGlobal').value = unformatRupiah(diskon);
+            return true;
+        }
     </script>
 </body>
 </html>
