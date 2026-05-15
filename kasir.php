@@ -218,7 +218,7 @@ if(isset($_POST['bayar'])) {
                                    VALUES ('$tanggal', '$keterangan', 'Pemasukan', '$uang_masuk_kas')");
         }
 
-        $_SESSION['keranjang'] = []; // Bersihkan keranjang
+        $_SESSION['keranjang'] = []; //untuk mengosogkan kerangjang after transaksi
         
         $pesan = ($status_bayar == 'Kasbon') ? "Berhasil! Transaksi KASBON tersimpan." : "Pembayaran LUNAS Berhasil!";
         echo "<script>alert('$pesan'); window.location='kasir.php';</script>";

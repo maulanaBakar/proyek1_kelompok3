@@ -33,18 +33,27 @@ $q_laba = mysqli_query($koneksi, "
 $d_laba = mysqli_fetch_assoc($q_laba);
 $laba_hari_ini = $d_laba['laba_kotor'] ?? 0;
 
-// ==========================================
-// Menghitung Saldo Kas 
-// ==========================================
+//BAGIAN NGITUNG SALDO KAS
+
 // 1. Ambil Total Uang dari Transaksi Kasir Hari Ini
+$q_awal = mysqli_query($koneksi, "SELECT saldo_fisik FROM closing_shift WHERE DATE(waktu_closing) < '$hari_ini' ORDER BY waktu_closing DESC LIMIT 1");
+$saldo_awal = mysqli_fetch_assoc($q_awal)['saldo_fisik'] ?? 0;
+
+
+// 2. Ambil Pemasukan & Pengeluaran dari Buku Kas Hari Ini
 $q_kasir = mysqli_query($koneksi, "SELECT SUM(total_pendapatan - kurang_bayar) as total_cash FROM transaksi WHERE DATE(tanggal_transaksi) = '$hari_ini'");
 $pendapatan_kasir = mysqli_fetch_assoc($q_kasir)['total_cash'] ?? 0;
-// 2. Ambil Pemasukan & Pengeluaran dari Buku Kas Hari Ini
-$m = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT SUM(nominal) as t FROM buku_kas WHERE jenis='Pemasukan' AND DATE(tanggal) = '$hari_ini'"))['t'] ?? 0;
-$k = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT SUM(nominal) as t FROM buku_kas WHERE jenis='Pengeluaran' AND DATE(tanggal) = '$hari_ini'"))['t'] ?? 0;
 
-// 3. Saldo Sistem = Uang Penjualan + Pemasukan - Pengeluaran
-$saldo_sistem = $pendapatan_kasir + $m - $k;
+// 3. Ambil Pemasukan Manual Buku Kas (KECUALI Pelunasan Piutang DAN Transaksi Kasir Otomatis)
+$q_masuk = mysqli_query($koneksi, "SELECT SUM(nominal) as t FROM buku_kas WHERE jenis='Pemasukan' AND keterangan NOT LIKE '%[Pelunasan Piutang]%' AND keterangan NOT LIKE 'TRX #%' AND DATE(tanggal) = '$hari_ini'");
+$m = mysqli_fetch_assoc($q_masuk)['t'] ?? 0;
+
+//4. Ambil pengeluaran dari buku kas hari ini
+$q_keluar = mysqli_query($koneksi, "SELECT SUM(nominal) as t FROM buku_kas WHERE jenis='Pengeluaran' AND DATE(tanggal) = '$hari_ini'");
+$k = mysqli_fetch_assoc($q_keluar)['t'] ?? 0;
+
+//5. Saldo Sistem = Uang Penjualan + Pemasukan - Pengeluaran
+$saldo_sistem = $saldo_awal + $pendapatan_kasir + $m - $k;
 
 // ==========================================
 // 1. LOGIKA BUKU KAS (Pemasukan/Pengeluaran + Kategori)
@@ -67,7 +76,7 @@ if(isset($_POST['simpan_kas'])) {
     // Validasi Kanibal Modal (Cek Prive)
     $is_pribadi = stripos($ket, 'prive') !== false || stripos($ket, 'ambil') !== false || stripos($ket, 'jajan') !== false;
     if($jenis == 'Pengeluaran' && $is_pribadi && $nom > $laba_hari_ini) {
-        $_SESSION['warning_kanibal'] = "⚠️ STOP! Anda mengambil Rp ".number_format($nom)." padahal untung hari ini cuma Rp ".number_format($laba_hari_ini).". Anda memakan uang MODAL!";
+        $_SESSION['warning_kanibal'] = " STOP! Anda mengambil Rp ".number_format($nom)." padahal untung hari ini cuma Rp ".number_format($laba_hari_ini).". Anda memakan uang MODAL!";
     }
 
     mysqli_query($koneksi, "INSERT INTO buku_kas VALUES (NULL, '$tgl', '$ket', '$jenis', '$nom')");
@@ -208,7 +217,7 @@ $tab = isset($_GET['tab']) ? $_GET['tab'] : 'kas';
     <?php if($tab == 'kas'): ?>
     <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 20px;">
         <div class="box-laba">
-            <small style="color: #27ae60; font-weight: bold;"><i class="fa-solid fa-chart-line"></i> UNTUNG BERSIH HARI INI</small>
+            <small style="color: #27ae60; font-weight: bold;"><i class="fa-solid fa-chart-line"></i> LABA KOTOR HARI INI</small>
             <h2 style="color: #2ecc71; margin: 5px 0;">Rp <?= number_format($laba_hari_ini, 0, ',', '.') ?></h2>
             <small style="color: #666;">*Uang aman yang bisa Anda pakai (Prive).</small>
         </div>
@@ -319,7 +328,7 @@ $tab = isset($_GET['tab']) ? $_GET['tab'] : 'kas';
                 <?php 
                     }
                 } else {
-                    echo "<tr><td colspan='5' style='text-align:center; padding:30px; color:#888;'>Semua tagihan lunas. Mantap! ✅</td></tr>";
+                    echo "<tr><td colspan='5' style='text-align:center; padding:30px; color:#888;'>Kosong</td></tr>";
                 }
                 ?>
             </tbody>
