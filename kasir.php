@@ -405,7 +405,7 @@ if(isset($_POST['bayar'])) {
                             <input type="text" name="diskon_global" id="diskonGlobal" value="0" class="input-kasir" style="width: 50%; margin:0; text-align:right;" onkeyup="formatRp(this); hitungKembalian();">
                         </div>
                         
-                        <div id="boxWarning" class="box-warning untung" style="display:none;"></div>
+                       
                         <input type="hidden" id="totalBelanjaAwal" value="<?= $total ?>">
                         <input type="hidden" id="totalModalHPP" value="<?= $total_modal ?>">
 
@@ -493,112 +493,58 @@ if(isset($_POST['bayar'])) {
             });
         });
 
-        // Format Uang dan Hitung Kembalian & Rugi
-        function formatRp(input) {
-            let val = input.value.replace(/[^,\d]/g, '').toString();
-            let split = val.split(',');
-            let sisa = split[0].length % 3;
-            let rupiah = split[0].substr(0, sisa);
-            let ribuan = split[0].substr(sisa).match(/\d{3}/gi);
-            if(ribuan) {
-                let separator = sisa ? '.' : '';
-                rupiah += separator + ribuan.join('.');
-            }
-            rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
-            input.value = rupiah;
+        // Fungsi baru untuk konfirmasi pengurangan
+function confirmMin(id, qty) {
+    if (qty <= 1) {
+        if (confirm('Jumlah barang tinggal 1, yakin ingin menghapusnya dari keranjang?')) {
+            window.location.href = 'kasir.php?aksi=min&id_produk=' + id;
         }
+    } else {
+        window.location.href = 'kasir.php?aksi=min&id_produk=' + id;
+    }
+}
 
-        function unformatRupiah(str) {
-            return parseInt(str.replace(/[^,\d]/g, '')) || 0;
-        }
+// Fungsi baru untuk konfirmasi hapus permanen
+function confirmHapus(id) {
+    if (confirm('Yakin ingin menghapus produk ini dari keranjang?')) {
+        window.location.href = 'kasir.php?aksi=hapus&id_produk=' + id;
+    }
+}
 
-        let isKasbon = false;
-        function hitungKembalian() {
-            let d_input = document.getElementById('diskonGlobal').value;
-            let u_input = document.getElementById('uangDiterima').value;
-            
-            let diskon = unformatRupiah(d_input);
-            let uang = unformatRupiah(u_input);
-            let totalAwal = parseInt(document.getElementById('totalBelanjaAwal').value) || 0;
-            let modalHPP = parseInt(document.getElementById('totalModalHPP').value) || 0;
-            
-            let grandTotal = totalAwal - diskon;
-            if(grandTotal < 0) grandTotal = 0;
+// Modifikasi hitungKembalian (Bagian Peringatan Rugi Dihapus)
+function hitungKembalian() {
+    let d_input = document.getElementById('diskonGlobal').value;
+    let u_input = document.getElementById('uangDiterima').value;
+    
+    let diskon = unformatRupiah(d_input);
+    let uang = unformatRupiah(u_input);
+    let totalAwal = parseInt(document.getElementById('totalBelanjaAwal').value) || 0;
+    
+    let grandTotal = totalAwal - diskon;
+    if(grandTotal < 0) grandTotal = 0;
 
-            document.getElementById('textGrandTotal').innerText = 'Rp ' + grandTotal.toLocaleString('id-ID');
+    document.getElementById('textGrandTotal').innerText = 'Rp ' + grandTotal.toLocaleString('id-ID');
 
-            // --- PERINGATAN RUGI ---
-            let boxWarning = document.getElementById('boxWarning');
-            if(totalAwal > 0) {
-                boxWarning.style.display = 'block';
-                let profit = grandTotal - modalHPP;
-                if(profit < 0) {
-                    boxWarning.className = 'box-warning rugi';
-                    boxWarning.innerHTML = '🚨 AWAS RUGI! Potong modal Rp ' + Math.abs(profit).toLocaleString('id-ID');
-                } else {
-                    boxWarning.className = 'box-warning untung';
-                    boxWarning.innerHTML = '✅ Laba Kotor: Rp ' + profit.toLocaleString('id-ID');
-                }
-            }
+    // --- BAGIAN LABA KOTOR SUDAH DIHAPUS ---
 
-            // --- HITUNG KEMBALIAN ---
-            let boxStatus = document.getElementById('statusKembalian');
-            if (u_input === "") {
-                boxStatus.innerHTML = ''; return;
-            }
+    let boxStatus = document.getElementById('statusKembalian');
+    if (u_input === "") {
+        boxStatus.innerHTML = ''; return;
+    }
 
-            let kembalian = uang - grandTotal;
-            if(kembalian < 0) {
-                boxStatus.style.background = '#fdedec';
-                boxStatus.style.color = 'var(--red)';
-                boxStatus.innerHTML = '⚠️ KASBON: Kurang Rp ' + Math.abs(kembalian).toLocaleString('id-ID');
-                isKasbon = true;
-            } else {
-                boxStatus.style.background = '#e8f8f5';
-                boxStatus.style.color = 'var(--green)';
-                boxStatus.innerHTML = '✅ KEMBALIAN: Rp ' + kembalian.toLocaleString('id-ID');
-                isKasbon = false;
-            }
-        }
-
-        function bersihkanFormat() {
-            let nama = document.getElementById('namaPelanggan').value;
-            if(isKasbon && nama.trim() === "") {
-                alert("PENTING: Transaksi Kasbon wajib isi Nama Pelanggan!");
-                document.getElementById('namaPelanggan').focus();
-                return false;
-            }
-
-            let d = document.getElementById('diskonGlobal');
-            let u = document.getElementById('uangDiterima');
-            d.value = unformatRupiah(d.value);
-            if(u.value !== "") u.value = unformatRupiah(u.value);
-            return true;
-        }
-        
-        // Fungsi untuk mengirim jumlah yang diketik manual ke PHP
-        function updateQty(idProduk, qtyBaru) {
-            if(qtyBaru < 1 || isNaN(qtyBaru)) {
-                qtyBaru = 1; // Cegah input minus atau huruf
-            }
-            window.location.href = 'kasir.php?aksi=update&id_produk=' + idProduk + '&qty=' + qtyBaru;
-        }
-
-        // Script Modals
-        const modalHold = document.getElementById('modalHold');
-        const modalDaftarHold = document.getElementById('modalDaftarHold');
-
-        function bukaModalHold() { modalHold.style.display = 'flex'; }
-        function bukaModalDaftarHold() { modalDaftarHold.style.display = 'flex'; }
-        function tutupModal(id) { document.getElementById(id).style.display = 'none'; }
-        
-        window.onclick = function(e) {
-            if (e.target == modalHold) tutupModal('modalHold');
-            if (e.target == modalDaftarHold) tutupModal('modalDaftarHold');
-        }
-
-        // Jalankan hitungan pertama kali load
-        window.onload = hitungKembalian;
+    let kembalian = uang - grandTotal;
+    if(kembalian < 0) {
+        boxStatus.style.background = '#fdedec';
+        boxStatus.style.color = '#e74c3c';
+        boxStatus.innerHTML = '⚠️ KASBON: Kurang Rp ' + Math.abs(kembalian).toLocaleString('id-ID');
+        isKasbon = true;
+    } else {
+        boxStatus.style.background = '#e8f8f5';
+        boxStatus.style.color = '#27ae60';
+        boxStatus.innerHTML = '✅ KEMBALIAN: Rp ' + kembalian.toLocaleString('id-ID');
+        isKasbon = false;
+    }
+}
     </script>
 </body>
 </html>
