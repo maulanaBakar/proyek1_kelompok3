@@ -382,10 +382,10 @@ if(isset($_POST['bayar'])) {
                                 <p>Rp <?= number_format($item['harga'],0,',','.') ?></p>
                             </div>
                             <div class="qty-control">
-                                <a href="kasir.php?aksi=min&id_produk=<?= $id ?>">-</a>
+                                <a href="javascript:void(0);" onclick="confirmMin('<?= $id ?>', <?= $item['qty'] ?>)">-</a>
                                 <input type="number" class="input-qty" value="<?= $item['qty'] ?>" min="1" onchange="updateQty('<?= $id ?>', this.value)">
-                                <a href="kasir.php?aksi=plus&id_produk=<?= $id ?>">+</a>
-                                <a href="kasir.php?aksi=hapus&id_produk=<?= $id ?>" style="background: #ffcccc; color: #e74c3c;"><i class="fa-solid fa-trash"></i></a>
+                                    <a href="kasir.php?aksi=plus&id_produk=<?= $id ?>">+</a>
+                                <a href="javascript:void(0);" onclick="confirmHapus('<?= $id ?>')" style="background: #ffcccc; color: #e74c3c;"><i class="fa-solid fa-trash"></i></a>
                             </div>
                         </div>
                     <?php 
