@@ -45,6 +45,11 @@ if (isset($_POST['save'])) {
         }
     }
 
+    if ($stok < 0 || $harga_jual < 0 || $modal_beli < 0 || $biaya_prod < 0) {
+        echo "<script>alert('Gagal: Nilai stok, harga, atau modal tidak boleh minus/negatif!'); window.history.back();</script>";
+        exit;
+    }
+
     if (empty($id_produk)) {
         // INSERT (TAMBAH BARU)
         $query = "INSERT INTO produk (nama_produk, harga_satuan, stok, batas_minimal, jenis_produk, modal, biaya_produksi, hpp) 
@@ -105,8 +110,11 @@ if (isset($_POST['koreksi_rusak'])) {
     $data = mysqli_fetch_assoc($cek);
 
     if ($jumlah_koreksi > $data['stok_rusak']) {
-        echo "<script>alert('Gagal: Jumlah melebihi total barang yang rusak!'); window.history.back();</script>";
-        exit;
+    echo "<script>alert('Gagal: Jumlah melebihi total barang yang rusak!'); window.history.back();</script>";
+    exit;
+    } elseif ($jumlah_koreksi < 1) { 
+    echo "<script>alert('Gagal: Jumlah barang yang dikoreksi tidak boleh nol atau minus!'); window.history.back();</script>";
+    exit;
     } else {
         if ($jenis_tindakan == 'kembalikan') {
             $harga_satuan = ($data['jenis_produk'] == 'Luar') ? $data['modal'] : $data['hpp'];
@@ -210,7 +218,7 @@ if (isset($_POST['proses_tambah_cepat'])) {
 }
 ?>
 <!doctype html>
-<h lang="id">
+<html lang="id">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -220,16 +228,125 @@ if (isset($_POST['proses_tambah_cepat'])) {
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet" />
     <style>
-        .header-actions { display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
-        .filter-grup { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-        .filter-grup select, .filter-grup input { padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; }
-        .btn-filter { padding: 8px 15px; background: var(--cokelat-muda, #d4a373); color: white; border: none; border-radius: 6px; cursor: pointer; }
-        .btn-filter:hover { opacity: 0.9; }
-        .baris-atas { display: flex; justify-content: space-between; width: 100%; align-items: center; }
-        textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; resize: vertical; }
+        /* ==================== FIX LAYOUT UTAMA ==================== */
+        body {
+            display: flex;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            background-color: #f8f9fa;
+        }
         
+        .menu-samping {
+            width: 240px;
+            flex-shrink: 0;
+            position: fixed;
+            height: 100vh;
+        }
+
+        .isi-halaman {
+            flex-grow: 1;
+            margin-left: 240px; 
+            padding: 20px;
+            max-width: calc(100% - 240px);
+            box-sizing: border-box;
+        }
+
+        /* ==================== FIX HEADER & FILTER ==================== */
+        .header-halaman {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        
+        .baris-atas { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            width: 100%; 
+        }
+
+        .header-actions { 
+            width: 100%; 
+        }
+
+        .filter-grup { 
+            display: flex; 
+            gap: 8px; 
+            flex-wrap: wrap; 
+            align-items: center; 
+            width: 100%;
+        }
+
+        .filter-grup input[name="cari"] {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .filter-grup select, .filter-grup input { 
+            padding: 8px 12px; 
+            border: 1px solid #ccc; 
+            border-radius: 6px; 
+            font-family: inherit; 
+            font-size: 14px;
+        }
+
+        .btn-filter { 
+            padding: 8px 15px; 
+            background: var(--cokelat-muda, #d4a373); 
+            color: white; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 37px;
+        }
+        
+        .btn-filter:hover { opacity: 0.9; }
+
+        /* ==================== FIX TABEL RESPONSIVE ==================== */
+        .tabel-wadah {
+            width: 100%;
+            overflow-x: auto; 
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            white-space: nowrap; 
+        }
+
+        table th, table td {
+            padding: 12px 15px;
+            text-align: left;
+            font-size: 14px;
+        }
+
+       
+        .aksi-lengkap-cell {
+            display: flex; 
+            gap: 10px; 
+            justify-content: center; 
+            align-items: center;
+        }
+
+        textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; resize: vertical; }
         .badge-rusak { background: #ffebee; color: #c62828; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-weight: bold; border: 1px solid #ef9a9a; transition: 0.2s;}
         .badge-rusak:hover { background: #e57373; color: white;}
+
+        
+        @media (max-width: 768px) {
+            .menu-samping { display: none; }
+            .isi-halaman { margin-left: 0; max-width: 100%; padding-top: 70px; }
+            .baris-atas { flex-direction: row; }
+        }
     </style>
 </head>
 <body>
@@ -269,31 +386,31 @@ if (isset($_POST['proses_tambah_cepat'])) {
             
             <div class="header-actions">
                 <form action="stok.php" method="GET" class="filter-grup">
-    <input type="text" name="cari" placeholder="Cari nama produk..." value="<?= isset($_GET['cari']) ? htmlspecialchars($_GET['cari']) : '' ?>">
-    
-    <select name="jenis">
-        <option value="">Semua Jenis</option>
-        <option value="Luar" <?= (isset($_GET['jenis']) && $_GET['jenis'] == 'Luar') ? 'selected' : '' ?>>Produk Luar</option>
-        <option value="Produksi" <?= (isset($_GET['jenis']) && $_GET['jenis'] == 'Produksi') ? 'selected' : '' ?>>Produksi Sendiri</option>
-    </select>
+                    <input type="text" name="cari" placeholder="Cari nama produk..." value="<?= isset($_GET['cari']) ? htmlspecialchars($_GET['cari']) : '' ?>">
+                    
+                    <select name="jenis">
+                        <option value="">Semua Jenis</option>
+                        <option value="Luar" <?= (isset($_GET['jenis']) && $_GET['jenis'] == 'Luar') ? 'selected' : '' ?>>Produk Luar</option>
+                        <option value="Produksi" <?= (isset($_GET['jenis']) && $_GET['jenis'] == 'Produksi') ? 'selected' : '' ?>>Produksi Sendiri</option>
+                    </select>
 
-    <select name="status_stok">
-        <option value="">Semua Status Stok</option>
-        <option value="habis" <?= (isset($_GET['status_stok']) && $_GET['status_stok'] == 'habis') ? 'selected' : '' ?>>Stok Habis</option>
-        <option value="kritis" <?= (isset($_GET['status_stok']) && $_GET['status_stok'] == 'kritis') ? 'selected' : '' ?>>Stok Kritis</option>
-        <option value="aman" <?= (isset($_GET['status_stok']) && $_GET['status_stok'] == 'aman') ? 'selected' : '' ?>>Stok Aman</option>
-    </select>
+                    <select name="status_stok">
+                        <option value="">Semua Status Stok</option>
+                        <option value="habis" <?= (isset($_GET['status_stok']) && $_GET['status_stok'] == 'habis') ? 'selected' : '' ?>>Stok Habis</option>
+                        <option value="kritis" <?= (isset($_GET['status_stok']) && $_GET['status_stok'] == 'kritis') ? 'selected' : '' ?>>Stok Kritis</option>
+                        <option value="aman" <?= (isset($_GET['status_stok']) && $_GET['status_stok'] == 'aman') ? 'selected' : '' ?>>Stok Aman</option>
+                    </select>
 
-    <select name="urutkan">
-        <option value="">Urutkan: Default (Stok)</option>
-        <option value="harga_tertinggi" <?= (isset($_GET['urutkan']) && $_GET['urutkan'] == 'harga_tertinggi') ? 'selected' : '' ?>>Harga Tertinggi</option>
-        <option value="harga_terendah" <?= (isset($_GET['urutkan']) && $_GET['urutkan'] == 'harga_terendah') ? 'selected' : '' ?>>Harga Terendah</option>
-        <option value="abjad_az" <?= (isset($_GET['urutkan']) && $_GET['urutkan'] == 'abjad_az') ? 'selected' : '' ?>>Abjad (A - Z)</option>
-        <option value="abjad_za" <?= (isset($_GET['urutkan']) && $_GET['urutkan'] == 'abjad_za') ? 'selected' : '' ?>>Abjad (Z - A)</option>
-    </select>
-    <button type="submit" class="btn-filter"><i class="fa-solid fa-filter"></i></button>
-    <a href="stok.php" class="btn-filter" style="background: #e74c3c; text-decoration: none;"><i class="fa-solid fa-rotate-right"></i></a>
-</form>
+                    <select name="urutkan">
+                        <option value="">Urutkan: Default (Stok)</option>
+                        <option value="harga_tertinggi" <?= (isset($_GET['urutkan']) && $_GET['urutkan'] == 'harga_tertinggi') ? 'selected' : '' ?>>Harga Tertinggi</option>
+                        <option value="harga_terendah" <?= (isset($_GET['urutkan']) && $_GET['urutkan'] == 'harga_terendah') ? 'selected' : '' ?>>Harga Terendah</option>
+                        <option value="abjad_az" <?= (isset($_GET['urutkan']) && $_GET['urutkan'] == 'abjad_az') ? 'selected' : '' ?>>Abjad (A - Z)</option>
+                        <option value="abjad_za" <?= (isset($_GET['urutkan']) && $_GET['urutkan'] == 'abjad_za') ? 'selected' : '' ?>>Abjad (Z - A)</option>
+                    </select>
+                    <button type="submit" class="btn-filter"><i class="fa-solid fa-filter"></i></button>
+                    <a href="stok.php" class="btn-filter" style="background: #e74c3c; text-decoration: none;"><i class="fa-solid fa-rotate-right"></i></a>
+                </form>
             </div>
         </header>
 
@@ -352,24 +469,26 @@ if (isset($_POST['proses_tambah_cepat'])) {
                                 <span style="color: #ccc;">-</span>
                             <?php endif; ?>
                         </td>
-                        <td style="text-align: center; display: flex; gap: 12px; justify-content: center; align-items: center;">
-                             <i class="fa-solid fa-cart-plus" title="Tambah Stok Masuk" style="color: #27ae60; cursor:pointer; font-size: 1.1em;"
-                                onclick="bukaModalStokCepat('<?= $row['id_produk'] ?>', '<?= addslashes($row['nama_produk']) ?>')">
-                             </i>
+                        <td style="text-align: center;">
+                             <div class="aksi-lengkap-cell">
+                                 <i class="fa-solid fa-cart-plus" title="Tambah Stok Masuk" style="color: #27ae60; cursor:pointer; font-size: 1.1em;"
+                                    onclick="bukaModalStokCepat('<?= $row['id_produk'] ?>', '<?= addslashes($row['nama_produk']) ?>')">
+                                 </i>
 
-                             <i class="fa-solid fa-hand-holding-heart" title="Ambil Pribadi (Prive)" style="color: #3498db; cursor:pointer; font-size: 1.1em;"
-                                onclick="bukaModalPrive('<?= $row['id_produk'] ?>', '<?= addslashes($row['nama_produk']) ?>', '<?= $stok ?>')">
-                             </i>
+                                 <i class="fa-solid fa-hand-holding-heart" title="Ambil Pribadi (Prive)" style="color: #3498db; cursor:pointer; font-size: 1.1em;"
+                                    onclick="bukaModalPrive('<?= $row['id_produk'] ?>', '<?= addslashes($row['nama_produk']) ?>', '<?= $stok ?>')">
+                                 </i>
 
-                             <i class="fa-solid fa-triangle-exclamation" title="Lapor Barang Rusak" style="color: #e74c3c; cursor:pointer; font-size: 1.1em;"
-                                onclick="bukaModalRusak('<?= $row['id_produk'] ?>', '<?= addslashes($row['nama_produk']) ?>', '<?= $stok ?>')">
-                             </i>
-                             
-                             <i class="fa-regular fa-pen-to-square aksi-edit" title="Edit Produk" style="color: var(--cokelat-tua); cursor:pointer;"
-                                onclick="bukaModal('edit', '<?= $row['id_produk'] ?>', '<?= addslashes($row['nama_produk']) ?>', '<?= $row['stok'] ?>', '<?= $row['harga_satuan'] ?>', '<?= $row['batas_minimal'] ?>', '<?= $jenis_p ?>', '<?= $row['modal']??0 ?>', '<?= $row['biaya_produksi']??0 ?>')">
-                             </i>
-                             
-                             <a href="stok.php?hapus=<?= $row['id_produk'] ?>" onclick="return confirm('Hapus produk <?= addslashes($row['nama_produk']) ?>?')" class="tombol-hapus-teks">Hapus</a>
+                                 <i class="fa-solid fa-triangle-exclamation" title="Lapor Barang Rusak" style="color: #e74c3c; cursor:pointer; font-size: 1.1em;"
+                                    onclick="bukaModalRusak('<?= $row['id_produk'] ?>', '<?= addslashes($row['nama_produk']) ?>', '<?= $stok ?>')">
+                                 </i>
+                                 
+                                 <i class="fa-regular fa-pen-to-square aksi-edit" title="Edit Produk" style="color: var(--cokelat-tua); cursor:pointer;"
+                                    onclick="bukaModal('edit', '<?= $row['id_produk'] ?>', '<?= addslashes($row['nama_produk']) ?>', '<?= $row['stok'] ?>', '<?= $row['harga_satuan'] ?>', '<?= $row['batas_minimal'] ?>', '<?= $jenis_p ?>', '<?= $row['modal']??0 ?>', '<?= $row['biaya_produksi']??0 ?>')">
+                                 </i>
+                                 
+                                 <a href="stok.php?hapus=<?= $row['id_produk'] ?>" onclick="return confirm('Hapus produk <?= addslashes($row['nama_produk']) ?>?')" class="tombol-hapus-teks">Hapus</a>
+                             </div>
                         </td>
                     </tr>
                     <?php endwhile; ?>
@@ -403,7 +522,7 @@ if (isset($_POST['proses_tambah_cepat'])) {
                 </div>
                 <div id="formProduksi" style="display: none; background: #f9f9f9; padding: 10px; border-radius: 6px; margin-bottom: 15px;">
                     <div class="input-grup" style="margin-bottom: 0;">
-                        <label>Total Biaya Produksi (Rp)</label>
+                        <label>Total Biaya Production (Rp)</label>
                         <input type="number" name="biaya_produksi" id="mBiaya" value="0">
                         <small style="color: #888; margin-top: 5px; display: block;">*HPP per satuan akan dihitung otomatis berdasarkan jumlah stok.</small>
                     </div>

@@ -1,12 +1,4 @@
 <?php
-/**
- * laporan_pdf.php  — TANPA COMPOSER / TANPA LIBRARY EKSTERNAL
- * 
- * Cara kerja:
- * - Generate halaman HTML yang dioptimalkan untuk print
- * - Klik tombol "Cetak / Simpan PDF" → browser buka dialog Print
- * - Pilih "Save as PDF" / "Microsoft Print to PDF" → file .pdf tersimpan
- */
 
 include 'koneksi.php';
 date_default_timezone_set('Asia/Jakarta');
@@ -24,6 +16,12 @@ $hari_ini  = date('Y-m-d');
 $bulan_ini = date('m');
 $tahun_ini = date('Y');
 $view      = $_GET['view'] ?? 'hari';
+
+
+$q_toko = mysqli_query($koneksi, "SELECT nama_toko FROM pengaturan_toko WHERE id=1");
+$d_toko = mysqli_fetch_assoc($q_toko);
+$nama_toko = $d_toko['nama_toko'] ?? "2 PAKSI"; // "2 PAKSI" sebagai cadangan jika database kosong
+// 
 
 /* ===== Statistik ===== */
 $q_hari  = mysqli_query($koneksi, "SELECT SUM(total_pendapatan) as total FROM transaksi WHERE DATE(tanggal_transaksi)='$hari_ini'");
@@ -72,7 +70,7 @@ $res = mysqli_query($koneksi, $sql);
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<title>Laporan 2 Paksi</title>
+<title>Laporan <?= htmlspecialchars($nama_toko) ?></title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -177,7 +175,7 @@ $res = mysqli_query($koneksi, $sql);
 </div>
 
 <div class="doc-header">
-  <div class="brand">2 PAKSI</div>
+  <div class="brand"><?= htmlspecialchars(strtoupper($nama_toko)) ?></div>
   <div class="subtitle"><?= $title ?></div>
   <div class="meta">Dicetak pada: <?= date('d F Y, H:i') ?> WIB</div>
 </div>
@@ -248,7 +246,7 @@ $res = mysqli_query($koneksi, $sql);
 </table>
 
 <div class="doc-footer">
-  <span>2 Paksi Point of Sale System</span>
+  <span><?= htmlspecialchars($nama_toko) ?> Point of Sale System</span>
   <span>Laporan dihasilkan otomatis &copy; <?= date('Y') ?></span>
 </div>
 
