@@ -432,9 +432,26 @@ if (isset($_POST['proses_tambah_cepat'])) {
                     if (!empty($_GET['cari'])) { $caribersih = trim($_GET['cari']); $kondisi[] = "nama_produk LIKE '%" . mysqli_real_escape_string($koneksi, $caribersih) . "%'"; }
                     if (!empty($_GET['jenis'])) { $kondisi[] = "jenis_produk = '" . mysqli_real_escape_string($koneksi, $_GET['jenis']) . "'"; }
 
-                    $sql_where = count($kondisi) > 0 ? " WHERE " . implode(" AND ", $kondisi) : "";
-                    $sql_order = " ORDER BY stok ASC"; 
+                   $sql_where = count($kondisi) > 0 ? " WHERE " . implode(" AND ", $kondisi) : "";
 
+
+                $sql_order = " ORDER BY stok ASC"; 
+
+                if (!empty($_GET['urutkan'])) {
+                    if ($_GET['urutkan'] == 'harga_tertinggi') {
+                        $sql_order = " ORDER BY harga_satuan DESC";
+                    } elseif ($_GET['urutkan'] == 'harga_terendah') {
+                        $sql_order = " ORDER BY harga_satuan ASC";
+                    } elseif ($_GET['urutkan'] == 'abjad_az') {
+                        $sql_order = " ORDER BY nama_produk ASC";
+                    } elseif ($_GET['urutkan'] == 'abjad_za') {
+                        $sql_order = " ORDER BY nama_produk DESC";
+                    }
+                }
+
+
+$sql = "SELECT * FROM produk" . $sql_where . $sql_order;
+$res = mysqli_query($koneksi, $sql);
                     $sql = "SELECT * FROM produk" . $sql_where . $sql_order;
                     $res = mysqli_query($koneksi, $sql);
 
